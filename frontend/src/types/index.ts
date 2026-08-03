@@ -58,6 +58,7 @@ export interface SkillDiagnostic {
   status: string
 }
 
+// ===== 认证 =====
 export interface LoginRequest {
   username: string
   password: string
@@ -66,7 +67,62 @@ export interface LoginRequest {
 export interface LoginResponse {
   token: string
   username: string
+  roleName: string
   expiresAt: string
+  menus: MenuTree[]
+}
+
+export interface MenuTree {
+  id: number
+  name: string
+  path: string
+  icon?: string
+  parentId: number
+  sort: number
+  children: MenuTree[]
+}
+
+export interface ChangePasswordRequest {
+  username: string
+  oldPassword: string
+  newPassword: string
+}
+
+// ===== RBAC =====
+export interface RoleItem {
+  id: number
+  name: string
+  description?: string
+  createdAt: string
+}
+
+export interface MenuItem {
+  id: number
+  name: string
+  path: string
+  icon?: string
+  parentId: number
+  sort: number
+  createdAt: string
+  children: MenuItem[]
+}
+
+export interface RoleMenuAssignRequest {
+  roleId: number
+  menuIds: number[]
+}
+
+export interface RoleMenusResponse {
+  roleId: number
+  menuIds: number[]
+}
+
+export interface UserItem {
+  id: number
+  username: string
+  roleId: number
+  roleName?: string
+  createdAt: string
 }
 
 export interface DashboardStats {

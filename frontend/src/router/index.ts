@@ -49,6 +49,24 @@ const router = createRouter({
           name: 'Diagnostics',
           component: () => import('@/views/diagnostics/Index.vue'),
           meta: { title: '技能诊断', icon: 'monitoring' }
+        },
+        {
+          path: 'users',
+          name: 'Users',
+          component: () => import('@/views/users/Index.vue'),
+          meta: { title: '用户管理', icon: 'group' }
+        },
+        {
+          path: 'roles',
+          name: 'Roles',
+          component: () => import('@/views/roles/Index.vue'),
+          meta: { title: '角色管理', icon: 'shield' }
+        },
+        {
+          path: 'menus',
+          name: 'Menus',
+          component: () => import('@/views/menus/Index.vue'),
+          meta: { title: '菜单管理', icon: 'menu' }
         }
       ]
     }

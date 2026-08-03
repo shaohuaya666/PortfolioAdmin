@@ -15,6 +15,10 @@ public class PortfolioDbContext : DbContext
     public DbSet<CompactProject> CompactProjects => Set<CompactProject>();
     public DbSet<ProjectSkill> ProjectSkills => Set<ProjectSkill>();
     public DbSet<SkillDiagnostic> SkillDiagnostics => Set<SkillDiagnostic>();
+    public DbSet<User> Users => Set<User>();
+    public DbSet<Role> Roles => Set<Role>();
+    public DbSet<Menu> Menus => Set<Menu>();
+    public DbSet<RoleMenu> RoleMenus => Set<RoleMenu>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -95,6 +99,45 @@ public class PortfolioDbContext : DbContext
             entity.Property(e => e.Desc).HasMaxLength(500);
             entity.Property(e => e.Stat).HasMaxLength(100);
             entity.Property(e => e.Status).HasMaxLength(50);
+        });
+
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.ToTable("Users");
+            entity.Property(e => e.Username).HasMaxLength(100).IsRequired();
+            entity.Property(e => e.PasswordHash).HasMaxLength(500).IsRequired();
+            entity.HasOne(u => u.Role)
+                .WithMany(r => r.Users)
+                .HasForeignKey(u => u.RoleId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Role>(entity =>
+        {
+            entity.ToTable("Roles");
+            entity.Property(e => e.Name).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.Description).HasMaxLength(200);
+        });
+
+        modelBuilder.Entity<Menu>(entity =>
+        {
+            entity.ToTable("Menus");
+            entity.Property(e => e.Name).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.Path).HasMaxLength(200).IsRequired();
+            entity.Property(e => e.Icon).HasMaxLength(100);
+        });
+
+        modelBuilder.Entity<RoleMenu>(entity =>
+        {
+            entity.ToTable("RoleMenus");
+            entity.HasOne(rm => rm.Role)
+                .WithMany(r => r.RoleMenus)
+                .HasForeignKey(rm => rm.RoleId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(rm => rm.Menu)
+                .WithMany(m => m.RoleMenus)
+                .HasForeignKey(rm => rm.MenuId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
