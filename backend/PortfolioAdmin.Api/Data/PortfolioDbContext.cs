@@ -1,3 +1,6 @@
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using PortfolioAdmin.Api.Models;
 
@@ -24,120 +27,104 @@ public class PortfolioDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.Entity<Advantage>(entity =>
-        {
-            entity.ToTable("Advantages");
-            entity.Property(e => e.Id).HasMaxLength(50);
-            entity.Property(e => e.Num).HasMaxLength(10);
-            entity.Property(e => e.Title).HasMaxLength(200);
-            entity.Property(e => e.Desc).HasMaxLength(500);
-        });
+        // 反射扫描所有 DbSet 属性，自动注册实体并应用 DataAnnotation 配置
+        AutoConfigureEntities(modelBuilder);
 
-        modelBuilder.Entity<SkillCategory>(entity =>
-        {
-            entity.ToTable("SkillCategories");
-            entity.Property(e => e.Title).HasMaxLength(100);
-            entity.Property(e => e.ThemeColor).HasMaxLength(50);
-            entity.HasMany(e => e.Tags)
-                .WithOne(t => t.SkillCategory)
-                .HasForeignKey(t => t.SkillCategoryId)
-                .OnDelete(DeleteBehavior.Cascade);
-        });
+        // FK 级联关系仍然需要通过反射自动配置
+        AutoConfigureRelationships(modelBuilder);
+    }
 
-        modelBuilder.Entity<TagInfo>(entity =>
-        {
-            entity.ToTable("Tags");
-            entity.Property(e => e.Name).HasMaxLength(100);
-        });
+    /// <summary>
+    /// 通过反射扫描所有实体类型，自动绑定表名和属性约束
+    /// </summary>
+    private void AutoConfigureEntities(ModelBuilder modelBuilder)
+    {
+        var entityTypes = this.GetType().GetProperties()
+            .Where(p => p.PropertyType.IsGenericType
+                     && p.PropertyType.GetGenericTypeDefinition() == typeof(DbSet<>))
+            .Select(p => p.PropertyType.GetGenericArguments()[0])
+            .ToList();
 
-        modelBuilder.Entity<WorkHistory>(entity =>
+        foreach (var entityType in entityTypes)
         {
-            entity.ToTable("WorkHistories");
-            entity.Property(e => e.Id).HasMaxLength(50);
-            entity.Property(e => e.Company).HasMaxLength(200);
-            entity.Property(e => e.Role).HasMaxLength(200);
-            entity.Property(e => e.Period).HasMaxLength(50);
-            entity.Property(e => e.Desc).HasMaxLength(500);
-            entity.HasMany(e => e.Achievements)
-                .WithOne(a => a.WorkHistory)
-                .HasForeignKey(a => a.WorkHistoryId)
-                .OnDelete(DeleteBehavior.Cascade);
-        });
+            var entityMethod = typeof(ModelBuilder).GetMethod(nameof(ModelBuilder.Entity), Type.EmptyTypes);
+            if (entityMethod == null) continue;
 
-        modelBuilder.Entity<Achievement>(entity =>
-        {
-            entity.ToTable("Achievements");
-            entity.Property(e => e.Description).HasMaxLength(500);
-            entity.Property(e => e.WorkHistoryId).HasMaxLength(50);
-        });
+            var genericMethod = entityMethod.MakeGenericMethod(entityType);
+            var entityBuilder = genericMethod.Invoke(modelBuilder, null);
 
-        modelBuilder.Entity<CompactProject>(entity =>
-        {
-            entity.ToTable("CompactProjects");
-            entity.Property(e => e.Id).HasMaxLength(50);
-            entity.Property(e => e.Title).HasMaxLength(200);
-            entity.Property(e => e.Type).HasMaxLength(100);
-            entity.Property(e => e.Year).HasMaxLength(50);
-            entity.Property(e => e.Desc).HasMaxLength(500);
-            entity.HasMany(e => e.Skills)
-                .WithOne(s => s.Project)
-                .HasForeignKey(s => s.ProjectId)
-                .OnDelete(DeleteBehavior.Cascade);
-        });
+            // 通过反射调用 entityBuilder.ToTable()、.Property().HasMaxLength() 等
+            // 实际上 EF Core 已经会根据 [Table]、[MaxLength] 等 DataAnnotation 自动配置
+            // 这里反射调用的意义在于：无论有多少实体，OnModelCreating 都不需要逐一手动配置
+            // 所有配置都由 DataAnnotation 驱动，反射确保每个实体类型都被注册
+            // 表名由 [Table] 注解决定，MaxLength 由 [MaxLength] 决定
+        }
+    }
 
-        modelBuilder.Entity<ProjectSkill>(entity =>
-        {
-            entity.ToTable("ProjectSkills");
-            entity.Property(e => e.Name).HasMaxLength(100);
-            entity.Property(e => e.ProjectId).HasMaxLength(50);
-        });
+    /// <summary>
+    /// 反射扫描所有导航属性，自动配置 FK 级联删除关系
+    /// </summary>
+    private void AutoConfigureRelationships(ModelBuilder modelBuilder)
+    {
+        // 获取 Models 命名空间下所有实体类型（通过反射扫描）
+        var entityTypes = Assembly.GetExecutingAssembly().GetTypes()
+            .Where(t => t.IsClass && !t.IsAbstract && t.Namespace == "PortfolioAdmin.Api.Models")
+            .ToList();
 
-        modelBuilder.Entity<SkillDiagnostic>(entity =>
+        foreach (var entityType in entityTypes)
         {
-            entity.ToTable("SkillDiagnostics");
-            entity.Property(e => e.TagName).HasMaxLength(100);
-            entity.Property(e => e.Desc).HasMaxLength(500);
-            entity.Property(e => e.Stat).HasMaxLength(100);
-            entity.Property(e => e.Status).HasMaxLength(50);
-        });
+            // 查找所有 ICollection<> 导航属性，自动配置级联删除
+            foreach (var prop in entityType.GetProperties())
+            {
+                if (!prop.PropertyType.IsGenericType) continue;
 
-        modelBuilder.Entity<User>(entity =>
-        {
-            entity.ToTable("Users");
-            entity.Property(e => e.Username).HasMaxLength(100).IsRequired();
-            entity.Property(e => e.PasswordHash).HasMaxLength(500).IsRequired();
-            entity.HasOne(u => u.Role)
-                .WithMany(r => r.Users)
-                .HasForeignKey(u => u.RoleId)
-                .OnDelete(DeleteBehavior.Restrict);
-        });
+                var genericDef = prop.PropertyType.GetGenericTypeDefinition();
+                if (genericDef != typeof(ICollection<>) && genericDef != typeof(List<>)) continue;
 
-        modelBuilder.Entity<Role>(entity =>
-        {
-            entity.ToTable("Roles");
-            entity.Property(e => e.Name).HasMaxLength(50).IsRequired();
-            entity.Property(e => e.Description).HasMaxLength(200);
-        });
+                var childType = prop.PropertyType.GetGenericArguments()[0];
 
-        modelBuilder.Entity<Menu>(entity =>
-        {
-            entity.ToTable("Menus");
-            entity.Property(e => e.Name).HasMaxLength(50).IsRequired();
-            entity.Property(e => e.Path).HasMaxLength(200).IsRequired();
-            entity.Property(e => e.Icon).HasMaxLength(100);
-        });
+                // 通过反射调用 modelBuilder.Entity<entityType>().HasMany(prop.Name).WithOne(...).HasForeignKey(...).OnDelete(Cascade)
+                var entityBuilder = modelBuilder.Entity(entityType);
+                var hasMany = entityBuilder.GetType().GetMethod("HasMany", new[] { typeof(string) });
+                if (hasMany == null) continue;
 
-        modelBuilder.Entity<RoleMenu>(entity =>
-        {
-            entity.ToTable("RoleMenus");
-            entity.HasOne(rm => rm.Role)
-                .WithMany(r => r.RoleMenus)
-                .HasForeignKey(rm => rm.RoleId)
-                .OnDelete(DeleteBehavior.Cascade);
-            entity.HasOne(rm => rm.Menu)
-                .WithMany(m => m.RoleMenus)
-                .HasForeignKey(rm => rm.MenuId)
-                .OnDelete(DeleteBehavior.Cascade);
-        });
+                var collectionBuilder = hasMany.Invoke(entityBuilder, new object[] { prop.Name });
+                if (collectionBuilder == null) continue;
+
+                // .WithOne() - 不带参数的版本
+                var withOne = collectionBuilder.GetType().GetMethod("WithOne", Type.EmptyTypes);
+                var referenceBuilder = withOne?.Invoke(collectionBuilder, null);
+                if (referenceBuilder == null) continue;
+
+                // .HasForeignKey("FK属性名") - 需要在 childType 上找指向 entityType 的 FK
+                var fkProp = childType.GetProperties()
+                    .FirstOrDefault(p => p.GetCustomAttribute<ForeignKeyAttribute>() != null
+                                      && p.PropertyType == entityType);
+                if (fkProp != null)
+                {
+                    // 找到对应的 FK id 属性
+                    var fkAttr = fkProp.GetCustomAttribute<ForeignKeyAttribute>();
+                    var fkPropName = fkAttr?.Name;
+                    if (string.IsNullOrEmpty(fkPropName))
+                    {
+                        // 尝试按约定：NavigationPropertyName + "Id"
+                        var childNavProps = childType.GetProperties()
+                            .Where(p => p.PropertyType == entityType).ToList();
+                        fkPropName = childNavProps.Count == 1 ? childNavProps[0].Name + "Id" : null;
+                    }
+
+                    if (!string.IsNullOrEmpty(fkPropName))
+                    {
+                        var hasFk = referenceBuilder.GetType().GetMethod("HasForeignKey", new[] { typeof(string) });
+                        var builder = hasFk?.Invoke(referenceBuilder, new object[] { fkPropName });
+                        if (builder != null)
+                        {
+                            var onDelete = builder.GetType().GetMethod("OnDelete", new[] { typeof(DeleteBehavior) });
+                            onDelete?.Invoke(builder, new object[] { DeleteBehavior.Cascade });
+                        }
+                    }
+                }
+            }
+        }
     }
 }

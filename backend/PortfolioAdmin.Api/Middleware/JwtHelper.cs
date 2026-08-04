@@ -5,7 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace PortfolioAdmin.Api.Middleware;
 
-public class JwtHelper
+public class JwtHelper : IJwtService
 {
     private readonly IConfiguration _config;
 

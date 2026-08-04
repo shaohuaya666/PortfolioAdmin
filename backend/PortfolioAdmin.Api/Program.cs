@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using PortfolioAdmin.Api.Data;
 using PortfolioAdmin.Api.Middleware;
-using PortfolioAdmin.Api.Models;
+using PortfolioAdmin.Api.Services;
 using PortfolioAdmin.Api.Utils;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -75,8 +75,16 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<PortfolioDbContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
-// 注册服务
-builder.Services.AddSingleton<JwtHelper>();
+// 注册业务服务
+builder.Services.AddScoped<IPortfolioService, PortfolioService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IRoleMenuService, RoleMenuService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+
+// 注册工具/基础设施服务
+builder.Services.AddSingleton<IPasswordHasher, PasswordHelper>();
+builder.Services.AddSingleton<IJwtService, JwtHelper>();
 
 var app = builder.Build();
 
