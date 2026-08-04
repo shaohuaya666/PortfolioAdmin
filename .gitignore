@@ -59,3 +59,5 @@ logs/
 # Build Output
 # ============================================
 build_output.txt
+backend/init_data.sql
+backend/PortfolioAdmin.Api/appsettings.Development.json
