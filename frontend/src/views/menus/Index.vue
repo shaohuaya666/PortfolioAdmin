@@ -11,31 +11,28 @@
       </el-button>
     </div>
 
-    <div class="card-panel overflow-x-auto">
-      <el-table :data="flatList" style="width: 100%" size="small" class="data-table" row-style="background: transparent;"
-        row-key="id" default-expand-all>
-        <el-table-column prop="name" label="菜单名称" min-width="200">
-          <template #default="{ row }">
-            <span :style="{ paddingLeft: (row._level * 20) + 'px' }" class="flex items-center gap-2">
-              <span class="material-symbols-outlined text-sm" style="font-size:16px;color:#06b6d4;">{{ row.icon || 'circle' }}</span>
-              <span class="font-medium" :class="row.parentId === 0 ? 'text-cyan-400' : 'text-slate-300'">{{ row.name }}</span>
-              <span v-if="row.parentId !== 0" class="text-xs font-mono text-slate-400">└</span>
-            </span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="path" label="路由路径" width="200">
-          <template #default="{ row }">
-            <span class="text-xs font-mono text-slate-400">{{ row.path || '(父级分组)' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="sort" label="排序" width="80" align="center" />
-        <el-table-column label="操作" width="140" fixed="right">
-          <template #default="{ row }">
-            <el-button size="small" text @click="openDialog(row)">编辑</el-button>
-            <el-button size="small" text class="!text-red-400" @click="handleDelete(row.id)">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+    <div class="space-y-2">
+      <div v-for="item in flatList" :key="item.id"
+        class="card-panel flex items-center gap-4 group"
+        :style="{ marginLeft: (item._level * 24) + 'px', borderLeftWidth: item._level > 0 ? '0px' : '1px', borderLeftColor: item._level > 0 ? 'transparent' : undefined }">
+        <div class="menu-icon">
+          <span class="material-symbols-outlined">{{ item.icon || 'circle' }}</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <span class="text-sm font-semibold" :class="item.parentId === 0 ? 'text-[#22d3ee]' : 'text-[#c8d6e5]'">{{ item.name }}</span>
+          <span v-if="item.parentId !== 0" class="text-xs text-[#64748b] ml-2">└ 子菜单</span>
+        </div>
+        <div class="shrink-0">
+          <span class="text-xs font-mono text-[#64748b]">{{ item.path || '(父级分组)' }}</span>
+        </div>
+        <div class="shrink-0 text-xs font-mono text-[#64748b] w-12 text-center">#{{ item.sort }}</div>
+        <div class="flex gap-1 opacity-0 group-hover:opacity-100 shrink-0">
+          <el-button size="small" text @click="openDialog(item)">编辑</el-button>
+          <el-button size="small" text class="!text-red-400" @click="handleDelete(item.id)">
+            <span class="material-symbols-outlined text-sm">delete</span>
+          </el-button>
+        </div>
+      </div>
     </div>
 
     <!-- 弹窗 -->
@@ -162,3 +159,13 @@ async function handleDelete(id: number) {
 
 onMounted(loadData)
 </script>
+
+<style scoped>
+.menu-icon {
+  width: 36px; height: 36px; border-radius: 8px;
+  background: rgba(6, 182, 212, 0.08);
+  display: flex; align-items: center; justify-content: center;
+  color: #06b6d4; flex-shrink: 0;
+}
+.menu-icon .material-symbols-outlined { font-size: 18px; }
+</style>
