@@ -58,10 +58,34 @@ export interface SkillDiagnostic {
   status: string
 }
 
+// ===== 验证码 =====
+export interface CaptchaData {
+  captchaId: string
+  puzzleWidth: number
+  puzzleHeight: number
+  bgWidth: number
+  bgHeight: number
+  targetX: number
+  targetY: number
+}
+
+export interface CaptchaTrackPoint {
+  x: number
+  y: number
+  timestamp: number
+}
+
+export interface CaptchaVerifyRequest {
+  captchaId: string
+  sliderOffset: number
+  trackData: CaptchaTrackPoint[]
+}
+
 // ===== 认证 =====
 export interface LoginRequest {
   username: string
   password: string
+  captchaId?: string
 }
 
 export interface LoginResponse {

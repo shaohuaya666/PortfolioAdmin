@@ -85,6 +85,7 @@ builder.Services.AddScoped<IDashboardService, DashboardService>();
 // 注册工具/基础设施服务
 builder.Services.AddSingleton<IPasswordHasher, PasswordHelper>();
 builder.Services.AddSingleton<IJwtService, JwtHelper>();
+builder.Services.AddSingleton<ICaptchaService, CaptchaService>();
 
 var app = builder.Build();
 

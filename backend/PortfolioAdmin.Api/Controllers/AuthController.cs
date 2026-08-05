@@ -18,8 +18,10 @@ public class AuthController : ControllerBase
         if (string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.Password))
             return BadRequest(new { message = "用户名和密码不能为空" });
 
-        var result = await _auth.LoginAsync(request);
-        return result is null ? Unauthorized(new { message = "用户名或密码错误" }) : result;
+        var (result, errorMessage) = await _auth.LoginAsync(request);
+        if (result is null)
+            return Unauthorized(new { message = errorMessage ?? "用户名或密码错误" });
+        return result;
     }
 
     [HttpPost("change-password")]
