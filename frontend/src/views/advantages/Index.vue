@@ -5,7 +5,7 @@
         <h2 class="page-title">核心优势</h2>
         <p class="page-subtitle !mb-0">管理个人核心竞争力展示</p>
       </div>
-      <el-button type="primary" @click="openDialog()" class="!bg-cyan-500 !border-cyan-500">
+      <el-button type="primary" @click="openDialog()" class="!bg-cyan-500 !border-cyan-500" v-permission="'advantages:create'">
         <span class="material-symbols-outlined text-sm mr-1 align-middle" style="font-size:16px;vertical-align:middle;">add</span>
         新增优势
       </el-button>
@@ -19,10 +19,10 @@
           <p class="text-[#64748b] text-xs leading-relaxed">{{ item.desc }}</p>
         </div>
         <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <el-button size="small" text @click="openDialog(item)">
+          <el-button size="small" text @click="openDialog(item)" v-permission="'advantages:edit'">
             <span class="material-symbols-outlined text-sm">edit</span>
           </el-button>
-          <el-button size="small" text class="!text-red-400" @click="handleDelete(item.id)">
+          <el-button size="small" text class="!text-red-400" @click="handleDelete(item.id)" v-permission="'advantages:delete'">
             <span class="material-symbols-outlined text-sm">delete</span>
           </el-button>
         </div>

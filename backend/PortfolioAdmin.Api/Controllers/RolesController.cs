@@ -1,4 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PortfolioAdmin.Api.Attributes;
 using PortfolioAdmin.Api.DTOs;
 using PortfolioAdmin.Api.Services;
 
@@ -6,6 +8,7 @@ namespace PortfolioAdmin.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class RolesController : ControllerBase
 {
     private readonly IRoleMenuService _service;
@@ -24,6 +27,7 @@ public class RolesController : ControllerBase
     }
 
     [HttpPost]
+    [RequirePermission("roles:create")]
     public async Task<ActionResult<RoleDto>> Create([FromBody] CreateRoleRequest req)
     {
         var (success, message, data) = await _service.CreateRoleAsync(req);
@@ -33,6 +37,7 @@ public class RolesController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [RequirePermission("roles:edit")]
     public async Task<IActionResult> Update(int id, [FromBody] CreateRoleRequest req)
     {
         var (success, message) = await _service.UpdateRoleAsync(id, req);
@@ -45,6 +50,7 @@ public class RolesController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [RequirePermission("roles:delete")]
     public async Task<IActionResult> Delete(int id)
     {
         var (success, message) = await _service.DeleteRoleAsync(id);

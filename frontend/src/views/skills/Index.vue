@@ -9,7 +9,7 @@
           <h3 class="text-[#c8d6e5] font-semibold text-sm flex items-center gap-2">
             <span class="material-symbols-outlined text-cyan-500 text-sm">folder</span> 技能分类
           </h3>
-          <el-button size="small" class="add-btn" @click="openCategoryDialog()">+ 添加</el-button>
+          <el-button size="small" class="add-btn" @click="openCategoryDialog()" v-permission="'skills:create'">+ 添加</el-button>
         </div>
         <div v-for="cat in categories" :key="cat.id" class="category-item group">
           <div class="flex-1">
@@ -17,10 +17,10 @@
             <div class="text-xs text-[#64748b] mt-0.5">{{ cat.tags?.length || 0 }} 个标签</div>
           </div>
           <div class="flex gap-1 opacity-0 group-hover:opacity-100">
-            <el-button size="small" text @click="openCategoryDialog(cat)">
+            <el-button size="small" text @click="openCategoryDialog(cat)" v-permission="'skills:edit'">
               <span class="material-symbols-outlined text-xs">edit</span>
             </el-button>
-            <el-button size="small" text class="!text-red-400" @click="handleDeleteCategory(cat.id)">
+            <el-button size="small" text class="!text-red-400" @click="handleDeleteCategory(cat.id)" v-permission="'skills:delete'">
               <span class="material-symbols-outlined text-xs">delete</span>
             </el-button>
           </div>
@@ -32,7 +32,7 @@
           <h3 class="text-[#c8d6e5] font-semibold text-sm flex items-center gap-2">
             <span class="material-symbols-outlined text-cyan-500 text-sm">sell</span> 技术标签
           </h3>
-          <el-button size="small" class="add-btn" @click="openTagDialog()">+ 添加</el-button>
+          <el-button size="small" class="add-btn" @click="openTagDialog()" v-permission="'skills:tags_create'">+ 添加</el-button>
         </div>
         <div class="mb-3">
           <el-select v-model="filterCategoryId" placeholder="按分类筛选" size="small" clearable style="width:100%" @change="loadTags">
@@ -42,7 +42,7 @@
         <div class="flex flex-wrap gap-2">
           <span v-for="tag in tags" :key="tag.id" class="tag-cyan cursor-pointer" :class="{ 'tag-cyan-core': tag.isCore }" @click="openTagDialog(tag)">
             {{ tag.name }}
-            <el-button size="small" text style="color:#ef4444;padding:0;margin-left:4px" @click.stop="handleDeleteTag(tag.id)">
+            <el-button size="small" text style="color:#ef4444;padding:0;margin-left:4px" @click.stop="handleDeleteTag(tag.id)" v-permission="'skills:tags_delete'">
               <span class="material-symbols-outlined text-xs">close</span>
             </el-button>
           </span>

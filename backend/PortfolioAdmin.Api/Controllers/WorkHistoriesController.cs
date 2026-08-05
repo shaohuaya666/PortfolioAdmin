@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PortfolioAdmin.Api.Attributes;
 using PortfolioAdmin.Api.DTOs;
 using PortfolioAdmin.Api.Models;
 using PortfolioAdmin.Api.Services;
@@ -27,6 +28,7 @@ public class WorkHistoriesController : ControllerBase
     }
 
     [HttpPost]
+    [RequirePermission("work-history:create")]
     public async Task<ActionResult<WorkHistory>> Create(WorkHistoryRequest dto)
     {
         if (await _service.WorkHistoryExistsAsync(dto.Id))
@@ -41,6 +43,7 @@ public class WorkHistoriesController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [RequirePermission("work-history:edit")]
     public async Task<IActionResult> Update(string id, WorkHistoryRequest dto)
     {
         var entity = await _service.UpdateWorkHistoryAsync(id, dto);
@@ -48,6 +51,7 @@ public class WorkHistoriesController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [RequirePermission("work-history:delete")]
     public async Task<IActionResult> Delete(string id)
     {
         var success = await _service.DeleteWorkHistoryAsync(id);

@@ -13,6 +13,7 @@ public interface IRoleMenuService
 
     // ============ Menus ============
     Task<List<MenuTreeNode>> GetMenuTreeAsync();
+    Task<List<MenuTreeNode>> GetMenuTreeWithActionsAsync();
     Task<List<MenuDto>> GetMyMenusAsync(string username);
     Task<MenuTreeNode?> CreateMenuAsync(CreateMenuRequest req);
     Task<bool> UpdateMenuAsync(int id, CreateMenuRequest req);
@@ -21,4 +22,7 @@ public interface IRoleMenuService
     // ============ RoleMenus ============
     Task<RoleMenusResponse?> GetRoleMenusAsync(int roleId);
     Task<bool> AssignRoleMenusAsync(RoleMenuAssignRequest req);
+
+    // ============ Permissions ============
+    Task<List<string>> GetMyPermissionsAsync(string username);
 }

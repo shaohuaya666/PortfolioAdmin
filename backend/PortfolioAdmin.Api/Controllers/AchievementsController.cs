@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PortfolioAdmin.Api.Attributes;
 using PortfolioAdmin.Api.DTOs;
 using PortfolioAdmin.Api.Models;
 using PortfolioAdmin.Api.Services;
@@ -27,6 +28,7 @@ public class AchievementsController : ControllerBase
     }
 
     [HttpPost]
+    [RequirePermission("work-history:achievements_create")]
     public async Task<ActionResult<Achievement>> Create(AchievementRequest dto)
     {
         if (!await _service.WorkHistoryExistsForAchievementAsync(dto.WorkHistoryId))
@@ -40,6 +42,7 @@ public class AchievementsController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [RequirePermission("work-history:achievements_edit")]
     public async Task<IActionResult> Update(int id, AchievementRequest dto)
     {
         var entity = await _service.UpdateAchievementAsync(id, dto);
@@ -47,6 +50,7 @@ public class AchievementsController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [RequirePermission("work-history:achievements_delete")]
     public async Task<IActionResult> Delete(int id)
     {
         var success = await _service.DeleteAchievementAsync(id);

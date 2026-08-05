@@ -94,6 +94,7 @@ export interface LoginResponse {
   roleName: string
   expiresAt: string
   menus: MenuTree[]
+  permissions: string[]
 }
 
 export interface MenuTree {
@@ -103,6 +104,8 @@ export interface MenuTree {
   icon?: string
   parentId: number
   sort: number
+  type?: string
+  permissionCode?: string
   children: MenuTree[]
 }
 
@@ -127,6 +130,8 @@ export interface MenuItem {
   icon?: string
   parentId: number
   sort: number
+  type?: string
+  permissionCode?: string
   createdAt: string
   children: MenuItem[]
 }
@@ -139,6 +144,7 @@ export interface RoleMenuAssignRequest {
 export interface RoleMenusResponse {
   roleId: number
   menuIds: number[]
+  menuTree: MenuItem[]
 }
 
 export interface UserItem {

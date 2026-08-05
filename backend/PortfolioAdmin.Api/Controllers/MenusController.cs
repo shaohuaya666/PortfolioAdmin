@@ -1,4 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PortfolioAdmin.Api.Attributes;
 using PortfolioAdmin.Api.DTOs;
 using PortfolioAdmin.Api.Services;
 
@@ -6,6 +8,7 @@ namespace PortfolioAdmin.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class MenusController : ControllerBase
 {
     private readonly IRoleMenuService _service;
@@ -27,9 +30,10 @@ public class MenusController : ControllerBase
 
     [HttpGet]
     public async Task<ActionResult<List<MenuTreeNode>>> GetAll()
-        => Ok(await _service.GetMenuTreeAsync());
+        => Ok(await _service.GetMenuTreeWithActionsAsync());
 
     [HttpPost]
+    [RequirePermission("menus:create")]
     public async Task<ActionResult<MenuTreeNode>> Create([FromBody] CreateMenuRequest req)
     {
         var result = await _service.CreateMenuAsync(req);
@@ -39,6 +43,7 @@ public class MenusController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [RequirePermission("menus:edit")]
     public async Task<IActionResult> Update(int id, [FromBody] CreateMenuRequest req)
     {
         var success = await _service.UpdateMenuAsync(id, req);
@@ -46,6 +51,7 @@ public class MenusController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [RequirePermission("menus:delete")]
     public async Task<IActionResult> Delete(int id)
     {
         var success = await _service.DeleteMenuAsync(id);

@@ -108,6 +108,7 @@ public class RoleMenuService : IRoleMenuService
     public async Task<List<MenuTreeNode>> GetMenuTreeAsync()
     {
         var menus = await _db.Menus
+            .Where(m => m.Type == "menu")
             .OrderBy(m => m.Sort)
             .Select(m => new MenuTreeNode
             {
@@ -117,6 +118,30 @@ public class RoleMenuService : IRoleMenuService
                 Icon = m.Icon,
                 ParentId = m.ParentId,
                 Sort = m.Sort,
+                Type = m.Type,
+                PermissionCode = m.PermissionCode,
+                CreatedAt = m.CreatedAt
+            })
+            .ToListAsync();
+
+        return BuildTree(menus, 0);
+    }
+
+    public async Task<List<MenuTreeNode>> GetMenuTreeWithActionsAsync()
+    {
+        var menus = await _db.Menus
+            .OrderBy(m => m.Type == "menu" ? 0 : 1)
+            .ThenBy(m => m.Sort)
+            .Select(m => new MenuTreeNode
+            {
+                Id = m.Id,
+                Name = m.Name,
+                Path = m.Path,
+                Icon = m.Icon,
+                ParentId = m.ParentId,
+                Sort = m.Sort,
+                Type = m.Type,
+                PermissionCode = m.PermissionCode,
                 CreatedAt = m.CreatedAt
             })
             .ToListAsync();
@@ -135,7 +160,7 @@ public class RoleMenuService : IRoleMenuService
             .ToListAsync();
 
         var menus = await _db.Menus
-            .Where(m => menuIds.Contains(m.Id))
+            .Where(m => menuIds.Contains(m.Id) && m.Type == "menu")
             .OrderBy(m => m.Sort)
             .Select(m => new MenuDto
             {
@@ -144,7 +169,9 @@ public class RoleMenuService : IRoleMenuService
                 Path = m.Path,
                 Icon = m.Icon,
                 ParentId = m.ParentId,
-                Sort = m.Sort
+                Sort = m.Sort,
+                Type = m.Type,
+                PermissionCode = m.PermissionCode
             })
             .ToListAsync();
 
@@ -160,6 +187,8 @@ public class RoleMenuService : IRoleMenuService
             Icon = req.Icon,
             ParentId = req.ParentId,
             Sort = req.Sort,
+            Type = req.Type,
+            PermissionCode = req.PermissionCode,
             CreatedAt = DateTime.Now
         };
 
@@ -174,6 +203,8 @@ public class RoleMenuService : IRoleMenuService
             Icon = menu.Icon,
             ParentId = menu.ParentId,
             Sort = menu.Sort,
+            Type = menu.Type,
+            PermissionCode = menu.PermissionCode,
             CreatedAt = menu.CreatedAt
         };
     }
@@ -188,6 +219,8 @@ public class RoleMenuService : IRoleMenuService
         menu.Icon = req.Icon;
         menu.ParentId = req.ParentId;
         menu.Sort = req.Sort;
+        menu.Type = req.Type;
+        menu.PermissionCode = req.PermissionCode;
         await _db.SaveChangesAsync();
 
         return true;
@@ -210,6 +243,22 @@ public class RoleMenuService : IRoleMenuService
         return true;
     }
 
+    // ============ Permissions ============
+    public async Task<List<string>> GetMyPermissionsAsync(string username)
+    {
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Username == username);
+        if (user == null) return new List<string>();
+
+        var permissionCodes = await _db.RoleMenus
+            .Where(rm => rm.RoleId == user.RoleId)
+            .Join(_db.Menus.Where(m => m.Type == "action" && m.PermissionCode != null),
+                  rm => rm.MenuId, m => m.Id, (rm, m) => m.PermissionCode!)
+            .Distinct()
+            .ToListAsync();
+
+        return permissionCodes;
+    }
+
     // ============ RoleMenus ============
     public async Task<RoleMenusResponse?> GetRoleMenusAsync(int roleId)
     {
@@ -221,7 +270,9 @@ public class RoleMenuService : IRoleMenuService
             .Select(rm => rm.MenuId)
             .ToListAsync();
 
-        return new RoleMenusResponse { RoleId = roleId, MenuIds = menuIds };
+        var menuTree = await GetMenuTreeWithActionsAsync();
+
+        return new RoleMenusResponse { RoleId = roleId, MenuIds = menuIds, MenuTree = menuTree };
     }
 
     public async Task<bool> AssignRoleMenusAsync(RoleMenuAssignRequest req)
@@ -257,6 +308,8 @@ public class RoleMenuService : IRoleMenuService
                 Icon = m.Icon,
                 ParentId = m.ParentId,
                 Sort = m.Sort,
+                Type = m.Type,
+                PermissionCode = m.PermissionCode,
                 CreatedAt = m.CreatedAt,
                 Children = BuildTree(menus, m.Id)
             })
@@ -276,6 +329,8 @@ public class RoleMenuService : IRoleMenuService
                 Icon = m.Icon,
                 ParentId = m.ParentId,
                 Sort = m.Sort,
+                Type = m.Type,
+                PermissionCode = m.PermissionCode,
                 Children = BuildMenuTree(menus, m.Id)
             })
             .ToList();

@@ -5,7 +5,7 @@
         <h2 class="page-title">用户管理</h2>
         <p class="page-subtitle !mb-0">管理后台用户账号与角色分配</p>
       </div>
-      <el-button type="primary" @click="openDialog()" class="!bg-cyan-500 !border-cyan-500">
+      <el-button type="primary" @click="openDialog()" class="!bg-cyan-500 !border-cyan-500" v-permission="'users:create'">
         <span class="material-symbols-outlined text-sm mr-1" style="font-size:16px;vertical-align:middle;">person_add</span>
         新增用户
       </el-button>
@@ -24,9 +24,9 @@
         </div>
         <div class="shrink-0 text-xs font-mono text-[#64748b] w-36 text-right">{{ new Date(item.createdAt).toLocaleString('zh-CN') }}</div>
         <div class="flex gap-1 opacity-0 group-hover:opacity-100 shrink-0">
-          <el-button size="small" text @click="openDialog(item)">编辑</el-button>
-          <el-button size="small" text class="!text-yellow-400" @click="openResetPwd(item.id)">重置密码</el-button>
-          <el-button size="small" text class="!text-red-400" @click="handleDelete(item.id)">
+          <el-button size="small" text @click="openDialog(item)" v-permission="'users:edit'">编辑</el-button>
+          <el-button size="small" text class="!text-yellow-400" @click="openResetPwd(item.id)" v-permission="'users:reset_password'">重置密码</el-button>
+          <el-button size="small" text class="!text-red-400" @click="handleDelete(item.id)" v-permission="'users:delete'">
             <span class="material-symbols-outlined text-sm">delete</span>
           </el-button>
         </div>
@@ -75,10 +75,10 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { usersApi } from '@/api/modules/users'
 import { rolesApi } from '@/api/modules/roles'
-import type { UserDto, Role } from '@/types'
+import type { UserItem, RoleItem } from '@/types'
 
-const list = ref<UserDto[]>([])
-const roleOptions = ref<Role[]>([])
+const list = ref<UserItem[]>([])
+const roleOptions = ref<RoleItem[]>([])
 const dialogVisible = ref(false)
 const resetVisible = ref(false)
 const isEdit = ref(false)
@@ -104,7 +104,7 @@ async function loadData() {
   roleOptions.value = roleRes.data
 }
 
-function openDialog(item?: UserDto) {
+function openDialog(item?: UserItem) {
   if (item) {
     isEdit.value = true
     editId.value = item.id

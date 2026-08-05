@@ -54,17 +54,30 @@ public class AuthService : IAuthService
             .OrderBy(m => m.Sort)
             .ToListAsync();
 
-        var menuDtos = allMenus.Select(m => new MenuDto
-        {
-            Id = m.Id,
-            Name = m.Name,
-            Path = m.Path,
-            Icon = m.Icon,
-            ParentId = m.ParentId,
-            Sort = m.Sort
-        }).ToList();
+        // 菜单树（仅 Type=menu）
+        var menuDtos = allMenus
+            .Where(m => m.Type == "menu")
+            .Select(m => new MenuDto
+            {
+                Id = m.Id,
+                Name = m.Name,
+                Path = m.Path,
+                Icon = m.Icon,
+                ParentId = m.ParentId,
+                Sort = m.Sort,
+                Type = m.Type,
+                PermissionCode = m.PermissionCode
+            }).ToList();
 
         var menuTree = BuildMenuTree(menuDtos, 0);
+
+        // 权限码列表（Type=action 且 PermissionCode 不为空）
+        var permissions = allMenus
+            .Where(m => m.Type == "action" && !string.IsNullOrEmpty(m.PermissionCode))
+            .Select(m => m.PermissionCode!)
+            .Distinct()
+            .ToList();
+
         var token = _jwt.GenerateToken(user.Username);
         var expireMinutes = int.Parse(_config["Jwt:ExpireMinutes"] ?? "480");
 
@@ -74,7 +87,8 @@ public class AuthService : IAuthService
             Username = user.Username,
             RoleName = user.Role?.Name ?? "",
             ExpiresAt = DateTime.UtcNow.AddMinutes(expireMinutes),
-            Menus = menuTree
+            Menus = menuTree,
+            Permissions = permissions
         }, null);
     }
 
@@ -112,6 +126,8 @@ public class AuthService : IAuthService
                 Icon = m.Icon,
                 ParentId = m.ParentId,
                 Sort = m.Sort,
+                Type = m.Type,
+                PermissionCode = m.PermissionCode,
                 Children = BuildMenuTree(menus, m.Id)
             })
             .ToList();

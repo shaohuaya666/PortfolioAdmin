@@ -1,4 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PortfolioAdmin.Api.Attributes;
 using PortfolioAdmin.Api.DTOs;
 using PortfolioAdmin.Api.Services;
 
@@ -6,6 +8,7 @@ namespace PortfolioAdmin.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class RoleMenusController : ControllerBase
 {
     private readonly IRoleMenuService _service;
@@ -20,6 +23,7 @@ public class RoleMenusController : ControllerBase
     }
 
     [HttpPost]
+    [RequirePermission("roles:assign_menus")]
     public async Task<IActionResult> Assign([FromBody] RoleMenuAssignRequest req)
     {
         var success = await _service.AssignRoleMenusAsync(req);

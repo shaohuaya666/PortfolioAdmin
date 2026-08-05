@@ -5,7 +5,7 @@
         <h2 class="page-title">工作经历</h2>
         <p class="page-subtitle !mb-0">管理工作履历与成就</p>
       </div>
-      <el-button type="primary" @click="openDialog()" class="!bg-cyan-500 !border-cyan-500">
+      <el-button type="primary" @click="openDialog()" class="!bg-cyan-500 !border-cyan-500" v-permission="'work-history:create'">
         <span class="material-symbols-outlined text-sm mr-1" style="font-size:16px;vertical-align:middle;">add</span>
         新增经历
       </el-button>
@@ -25,10 +25,10 @@
             <span v-if="item.isCurrent" class="tag-cyan tag-cyan-core !text-[10px]">在职</span>
           </div>
           <div class="flex gap-1">
-            <el-button size="small" text @click="openDialog(item)">
+            <el-button size="small" text @click="openDialog(item)" v-permission="'work-history:edit'">
               <span class="material-symbols-outlined text-sm">edit</span>
             </el-button>
-            <el-button size="small" text class="!text-red-400" @click="handleDelete(item.id)">
+            <el-button size="small" text class="!text-red-400" @click="handleDelete(item.id)" v-permission="'work-history:delete'">
               <span class="material-symbols-outlined text-sm">delete</span>
             </el-button>
           </div>
@@ -43,13 +43,13 @@
           </div>
           <div v-for="ach in item.achievements" :key="ach.id" class="flex items-center justify-between py-1.5 pl-6 group">
             <span class="text-xs text-[#94a3b8] flex-1">{{ ach.description }}</span>
-            <el-button size="small" text class="!text-red-400 opacity-0 group-hover:opacity-100 !p-0" @click="handleDeleteAchievement(ach.id)">
+            <el-button size="small" text class="!text-red-400 opacity-0 group-hover:opacity-100 !p-0" @click="handleDeleteAchievement(ach.id)" v-permission="'work-history:achievements_delete'">
               <span class="material-symbols-outlined text-xs">close</span>
             </el-button>
           </div>
           <div class="flex gap-2 pl-6 mt-2">
             <el-input v-model="achInputs[item.id]" placeholder="添加成就" size="small" class="!w-60" @keyup.enter="addAchievement(item.id)" />
-            <el-button size="small" @click="addAchievement(item.id)">添加</el-button>
+            <el-button size="small" @click="addAchievement(item.id)" v-permission="'work-history:achievements_create'">添加</el-button>
           </div>
         </div>
       </div>

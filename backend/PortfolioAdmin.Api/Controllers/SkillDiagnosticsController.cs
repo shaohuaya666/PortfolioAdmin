@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PortfolioAdmin.Api.Attributes;
 using PortfolioAdmin.Api.DTOs;
 using PortfolioAdmin.Api.Models;
 using PortfolioAdmin.Api.Services;
@@ -27,6 +28,7 @@ public class SkillDiagnosticsController : ControllerBase
     }
 
     [HttpPost]
+    [RequirePermission("diagnostics:create")]
     public async Task<ActionResult<SkillDiagnostic>> Create(SkillDiagnosticRequest dto)
     {
         var entity = await _service.CreateSkillDiagnosticAsync(new SkillDiagnostic
@@ -37,6 +39,7 @@ public class SkillDiagnosticsController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [RequirePermission("diagnostics:edit")]
     public async Task<IActionResult> Update(int id, SkillDiagnosticRequest dto)
     {
         var entity = await _service.UpdateSkillDiagnosticAsync(id, dto);
@@ -44,6 +47,7 @@ public class SkillDiagnosticsController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [RequirePermission("diagnostics:delete")]
     public async Task<IActionResult> Delete(int id)
     {
         var success = await _service.DeleteSkillDiagnosticAsync(id);

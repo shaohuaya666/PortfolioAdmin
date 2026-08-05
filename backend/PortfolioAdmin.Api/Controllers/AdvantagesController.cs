@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PortfolioAdmin.Api.Attributes;
 using PortfolioAdmin.Api.DTOs;
 using PortfolioAdmin.Api.Models;
 using PortfolioAdmin.Api.Services;
@@ -27,6 +28,7 @@ public class AdvantagesController : ControllerBase
     }
 
     [HttpPost]
+    [RequirePermission("advantages:create")]
     public async Task<ActionResult<Advantage>> Create(AdvantageRequest dto)
     {
         if (await _service.AdvantageExistsAsync(dto.Id))
@@ -40,6 +42,7 @@ public class AdvantagesController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [RequirePermission("advantages:edit")]
     public async Task<IActionResult> Update(string id, AdvantageRequest dto)
     {
         var entity = await _service.UpdateAdvantageAsync(id, dto);
@@ -47,6 +50,7 @@ public class AdvantagesController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [RequirePermission("advantages:delete")]
     public async Task<IActionResult> Delete(string id)
     {
         var success = await _service.DeleteAdvantageAsync(id);

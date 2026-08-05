@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PortfolioAdmin.Api.Attributes;
 using PortfolioAdmin.Api.DTOs;
 using PortfolioAdmin.Api.Models;
 using PortfolioAdmin.Api.Services;
@@ -27,6 +28,7 @@ public class TagsController : ControllerBase
     }
 
     [HttpPost]
+    [RequirePermission("skills:tags_create")]
     public async Task<ActionResult<TagInfo>> Create(TagInfoRequest dto)
     {
         if (!await _service.SkillCategoryExistsAsync(dto.SkillCategoryId))
@@ -40,6 +42,7 @@ public class TagsController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [RequirePermission("skills:tags_edit")]
     public async Task<IActionResult> Update(int id, TagInfoRequest dto)
     {
         var entity = await _service.UpdateTagAsync(id, dto);
@@ -47,6 +50,7 @@ public class TagsController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [RequirePermission("skills:tags_delete")]
     public async Task<IActionResult> Delete(int id)
     {
         var success = await _service.DeleteTagAsync(id);

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PortfolioAdmin.Api.Attributes;
 using PortfolioAdmin.Api.DTOs;
 using PortfolioAdmin.Api.Models;
 using PortfolioAdmin.Api.Services;
@@ -27,6 +28,7 @@ public class CompactProjectsController : ControllerBase
     }
 
     [HttpPost]
+    [RequirePermission("projects:create")]
     public async Task<ActionResult<CompactProject>> Create(CompactProjectRequest dto)
     {
         if (await _service.CompactProjectExistsAsync(dto.Id))
@@ -40,6 +42,7 @@ public class CompactProjectsController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [RequirePermission("projects:edit")]
     public async Task<IActionResult> Update(string id, CompactProjectRequest dto)
     {
         var entity = await _service.UpdateCompactProjectAsync(id, dto);
@@ -47,6 +50,7 @@ public class CompactProjectsController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [RequirePermission("projects:delete")]
     public async Task<IActionResult> Delete(string id)
     {
         var success = await _service.DeleteCompactProjectAsync(id);

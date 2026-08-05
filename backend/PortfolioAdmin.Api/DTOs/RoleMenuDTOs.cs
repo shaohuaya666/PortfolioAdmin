@@ -29,6 +29,8 @@ public class MenuTreeNode
     public string? Icon { get; set; }
     public int ParentId { get; set; }
     public int Sort { get; set; }
+    public string Type { get; set; } = "menu";
+    public string? PermissionCode { get; set; }
     public DateTime CreatedAt { get; set; }
     public List<MenuTreeNode> Children { get; set; } = new();
 }
@@ -45,6 +47,11 @@ public class CreateMenuRequest
     public string? Icon { get; set; }
     public int ParentId { get; set; }
     public int Sort { get; set; }
+    [Required]
+    [MaxLength(20)]
+    public string Type { get; set; } = "menu";
+    [MaxLength(100)]
+    public string? PermissionCode { get; set; }
 }
 
 // ===== 角色菜单 DTO =====
@@ -60,6 +67,7 @@ public class RoleMenusResponse
 {
     public int RoleId { get; set; }
     public List<int> MenuIds { get; set; } = new();
+    public List<MenuTreeNode> MenuTree { get; set; } = new();
 }
 
 // ===== 用户管理 DTO =====

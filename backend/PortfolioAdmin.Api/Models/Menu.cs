@@ -25,6 +25,13 @@ public class Menu
 
     public int Sort { get; set; }
 
+    [Required]
+    [MaxLength(20)]
+    public string Type { get; set; } = "menu";
+
+    [MaxLength(100)]
+    public string? PermissionCode { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.Now;
 
     // 导航属性

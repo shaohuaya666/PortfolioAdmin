@@ -1,4 +1,6 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PortfolioAdmin.Api.Attributes;
 using PortfolioAdmin.Api.DTOs;
 using PortfolioAdmin.Api.Services;
 
@@ -6,6 +8,7 @@ namespace PortfolioAdmin.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class UsersController : ControllerBase
 {
     private readonly IUserService _service;
@@ -24,6 +27,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpPost]
+    [RequirePermission("users:create")]
     public async Task<ActionResult<UserDto>> Create([FromBody] CreateUserRequest req)
     {
         var (success, message, data) = await _service.CreateAsync(req);
@@ -36,6 +40,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [RequirePermission("users:edit")]
     public async Task<IActionResult> Update(int id, [FromBody] UpdateUserRequest req)
     {
         var (success, message) = await _service.UpdateAsync(id, req);
@@ -49,6 +54,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpPost("{id}/reset-password")]
+    [RequirePermission("users:reset_password")]
     public async Task<IActionResult> ResetPassword(int id, [FromBody] ResetPasswordRequest req)
     {
         var (success, message) = await _service.ResetPasswordAsync(id, req.NewPassword);
@@ -56,6 +62,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [RequirePermission("users:delete")]
     public async Task<IActionResult> Delete(int id)
     {
         var success = await _service.DeleteAsync(id);
