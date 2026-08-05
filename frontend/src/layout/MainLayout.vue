@@ -39,7 +39,7 @@
           <div class="user-avatar">{{ username.charAt(0).toUpperCase() }}</div>
           <div>
             <div class="user-name">{{ username }}</div>
-            <div class="user-role">管理员</div>
+            <div class="user-role">{{ authStore.roleName || '管理员' }}</div>
           </div>
         </div>
         <div class="footer-actions">
