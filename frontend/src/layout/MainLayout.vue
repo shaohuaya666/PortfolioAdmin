@@ -100,13 +100,37 @@ import { useAuthStore } from '@/stores/auth'
 import { authApi } from '@/api/modules/auth'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
+import type { MenuTree } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 
 const username = computed(() => authStore.username || 'Admin')
-const currentTitle = computed(() => route.meta?.title as string || '')
+
+// 根据当前路由路径，从菜单树中构建完整面包屑路径
+const currentTitle = computed(() => {
+  const path = route.path
+  const breadcrumb = getBreadcrumb(menuTree.value, path)
+  return breadcrumb || (route.meta?.title as string) || ''
+})
+
+function getBreadcrumb(tree: MenuTree[], targetPath: string): string | null {
+  for (const item of tree) {
+    // 先检查当前层级
+    if (item.path === targetPath) {
+      return item.name
+    }
+    // 如果有子菜单，递归查找
+    if (item.children && item.children.length > 0) {
+      const childResult = getBreadcrumb(item.children, targetPath)
+      if (childResult) {
+        return `${item.name} / ${childResult}`
+      }
+    }
+  }
+  return null
+}
 
 // 从 store 获取动态菜单树
 const menuTree = computed(() => authStore.menus || [])
