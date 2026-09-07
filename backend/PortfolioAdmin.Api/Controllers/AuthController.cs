@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using PortfolioAdmin.Api.Attributes;
 using PortfolioAdmin.Api.DTOs;
 using PortfolioAdmin.Api.Services;
 
@@ -25,6 +26,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("change-password")]
+    [RequirePermission("users:reset_password")]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
     {
         var username = User.Identity?.Name;
