@@ -5,38 +5,32 @@
         <h2 class="page-title">用户管理</h2>
         <p class="page-subtitle !mb-0">管理后台用户账号与角色分配</p>
       </div>
-      <el-button type="primary" @click="openDialog()" class="!bg-cyan-500 !border-cyan-500">
+      <el-button type="primary" @click="openDialog()" class="!bg-cyan-500 !border-cyan-500" v-permission="'users:create'">
         <span class="material-symbols-outlined text-sm mr-1" style="font-size:16px;vertical-align:middle;">person_add</span>
         新增用户
       </el-button>
     </div>
 
-    <div class="card-panel overflow-x-auto">
-      <el-table :data="list" style="width: 100%" size="small" class="data-table" row-style="background: transparent;">
-        <el-table-column type="index" label="#" width="50" />
-        <el-table-column prop="username" label="用户名" width="160">
-          <template #default="{ row }">
-            <span class="font-medium text-cyan-400">{{ row.username }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="roleName" label="角色" width="140">
-          <template #default="{ row }">
-            <span class="tag-cyan">{{ row.roleName }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="createdAt" label="创建时间" width="180">
-          <template #default="{ row }">
-            <span class="text-xs font-mono text-slate-400">{{ new Date(row.createdAt).toLocaleString('zh-CN') }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="220" fixed="right">
-          <template #default="{ row }">
-            <el-button size="small" text @click="openDialog(row)">编辑</el-button>
-            <el-button size="small" text class="!text-yellow-400" @click="openResetPwd(row.id)">重置密码</el-button>
-            <el-button size="small" text class="!text-red-400" @click="handleDelete(row.id)">删除</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+    <div class="space-y-3">
+      <div v-for="item in list" :key="item.id" class="card-panel flex items-center gap-5 group">
+        <div class="user-avatar">
+          <span class="material-symbols-outlined">person</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <span class="text-sm text-[#c8d6e5] font-semibold">{{ item.username }}</span>
+        </div>
+        <div class="shrink-0">
+          <span class="tag-cyan">{{ item.roleName }}</span>
+        </div>
+        <div class="shrink-0 text-xs font-mono text-[#64748b] w-36 text-right">{{ new Date(item.createdAt).toLocaleString('zh-CN') }}</div>
+        <div class="flex gap-1 opacity-0 group-hover:opacity-100 shrink-0">
+          <el-button size="small" text @click="openDialog(item)" v-permission="'users:edit'">编辑</el-button>
+          <el-button size="small" text class="!text-yellow-400" @click="openResetPwd(item.id)" v-permission="'users:reset_password'">重置密码</el-button>
+          <el-button size="small" text class="!text-red-400" @click="handleDelete(item.id)" v-permission="'users:delete'">
+            <span class="material-symbols-outlined text-sm">delete</span>
+          </el-button>
+        </div>
+      </div>
     </div>
 
     <!-- 新增/编辑弹窗 -->
@@ -81,10 +75,10 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { usersApi } from '@/api/modules/users'
 import { rolesApi } from '@/api/modules/roles'
-import type { UserDto, Role } from '@/types'
+import type { UserItem, RoleItem } from '@/types'
 
-const list = ref<UserDto[]>([])
-const roleOptions = ref<Role[]>([])
+const list = ref<UserItem[]>([])
+const roleOptions = ref<RoleItem[]>([])
 const dialogVisible = ref(false)
 const resetVisible = ref(false)
 const isEdit = ref(false)
@@ -110,7 +104,7 @@ async function loadData() {
   roleOptions.value = roleRes.data
 }
 
-function openDialog(item?: UserDto) {
+function openDialog(item?: UserItem) {
   if (item) {
     isEdit.value = true
     editId.value = item.id
@@ -172,3 +166,13 @@ async function handleDelete(id: number) {
 
 onMounted(loadData)
 </script>
+
+<style scoped>
+.user-avatar {
+  width: 40px; height: 40px; border-radius: 10px;
+  background: rgba(6, 182, 212, 0.08);
+  display: flex; align-items: center; justify-content: center;
+  color: #06b6d4; flex-shrink: 0;
+}
+.user-avatar .material-symbols-outlined { font-size: 20px; }
+</style>

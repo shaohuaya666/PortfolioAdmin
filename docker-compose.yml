@@ -1,0 +1,26 @@
+services:
+  # 不再内置 MySQL：后端按 appsettings.Development.json 连接远程库 116.62.61.222:3306
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: portfolio-backend
+    restart: unless-stopped
+    environment:
+      # Development 环境会加载 appsettings.Development.json，
+      # 其中 ConnectionStrings:DefaultConnection 已指向远程 MySQL（116.62.61.222）
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:80
+    ports:
+      - "5273:80"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: portfolio-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"

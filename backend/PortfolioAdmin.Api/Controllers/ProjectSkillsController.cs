@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using PortfolioAdmin.Api.Data;
+using PortfolioAdmin.Api.Attributes;
 using PortfolioAdmin.Api.DTOs;
 using PortfolioAdmin.Api.Models;
+using PortfolioAdmin.Api.Services;
 
 namespace PortfolioAdmin.Api.Controllers;
 
@@ -12,61 +12,48 @@ namespace PortfolioAdmin.Api.Controllers;
 [Authorize]
 public class ProjectSkillsController : ControllerBase
 {
-    private readonly PortfolioDbContext _db;
+    private readonly IPortfolioService _service;
 
-    public ProjectSkillsController(PortfolioDbContext db) => _db = db;
+    public ProjectSkillsController(IPortfolioService service) => _service = service;
 
     [HttpGet]
     public async Task<List<ProjectSkill>> GetAll([FromQuery] string? projectId)
-    {
-        var query = _db.ProjectSkills.AsQueryable();
-        if (!string.IsNullOrEmpty(projectId))
-            query = query.Where(s => s.ProjectId == projectId);
-        return await query.OrderBy(s => s.Id).ToListAsync();
-    }
+        => await _service.GetProjectSkillsAsync(projectId);
 
     [HttpGet("{id}")]
     public async Task<ActionResult<ProjectSkill>> GetById(int id)
     {
-        var entity = await _db.ProjectSkills.FindAsync(id);
+        var entity = await _service.GetProjectSkillByIdAsync(id);
         return entity is null ? NotFound() : entity;
     }
 
     [HttpPost]
+    [RequirePermission("projects:skills_create")]
     public async Task<ActionResult<ProjectSkill>> Create(ProjectSkillRequest dto)
     {
-        if (!await _db.CompactProjects.AnyAsync(p => p.Id == dto.ProjectId))
+        if (!await _service.CompactProjectExistsForSkillAsync(dto.ProjectId))
             return BadRequest(new { message = "所属项目不存在" });
 
-        var entity = new ProjectSkill
+        var entity = await _service.CreateProjectSkillAsync(new ProjectSkill
         {
-            Name = dto.Name,
-            ProjectId = dto.ProjectId
-        };
-        _db.ProjectSkills.Add(entity);
-        await _db.SaveChangesAsync();
+            Name = dto.Name, ProjectId = dto.ProjectId
+        });
         return CreatedAtAction(nameof(GetById), new { id = entity.Id }, entity);
     }
 
     [HttpPut("{id}")]
+    [RequirePermission("projects:skills_edit")]
     public async Task<IActionResult> Update(int id, ProjectSkillRequest dto)
     {
-        var entity = await _db.ProjectSkills.FindAsync(id);
-        if (entity is null) return NotFound();
-
-        entity.Name = dto.Name;
-        entity.ProjectId = dto.ProjectId;
-        await _db.SaveChangesAsync();
-        return NoContent();
+        var entity = await _service.UpdateProjectSkillAsync(id, dto);
+        return entity is null ? NotFound() : NoContent();
     }
 
     [HttpDelete("{id}")]
+    [RequirePermission("projects:skills_delete")]
     public async Task<IActionResult> Delete(int id)
     {
-        var entity = await _db.ProjectSkills.FindAsync(id);
-        if (entity is null) return NotFound();
-        _db.ProjectSkills.Remove(entity);
-        await _db.SaveChangesAsync();
-        return NoContent();
+        var success = await _service.DeleteProjectSkillAsync(id);
+        return success ? NoContent() : NotFound();
     }
 }

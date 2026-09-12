@@ -1,0 +1,63 @@
+name: Deploy to Aliyun Server
+
+on:
+  push:
+    branches:
+      - main  # 推送到 main 分支时触发
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. 检出代码
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. 构建并推送 Docker 镜像到阿里云容器镜像服务
+      - name: Login to Aliyun Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.ALIYUN_REGISTRY }}
+          username: ${{ secrets.ALIYUN_REGISTRY_USERNAME }}
+          password: ${{ secrets.ALIYUN_REGISTRY_PASSWORD }}
+
+      # 构建后端镜像
+      - name: Build and push backend image
+        working-directory: backend
+        run: |
+          docker build -t ${{ secrets.ALIYUN_REGISTRY }}/portfolio-admin/portfolio-admin-api:${{ github.sha }} .
+          docker build -t ${{ secrets.ALIYUN_REGISTRY }}/portfolio-admin/portfolio-admin-api:latest .
+          docker push ${{ secrets.ALIYUN_REGISTRY }}/portfolio-admin/portfolio-admin-api:${{ github.sha }}
+          docker push ${{ secrets.ALIYUN_REGISTRY }}/portfolio-admin/portfolio-admin-api:latest
+
+      # 构建前端镜像
+      - name: Build and push frontend image
+        working-directory: frontend
+        run: |
+          docker build -t ${{ secrets.ALIYUN_REGISTRY }}/portfolio-admin/portfolio-admin-web:${{ github.sha }} .
+          docker build -t ${{ secrets.ALIYUN_REGISTRY }}/portfolio-admin/portfolio-admin-web:latest .
+          docker push ${{ secrets.ALIYUN_REGISTRY }}/portfolio-admin/portfolio-admin-web:${{ github.sha }}
+          docker push ${{ secrets.ALIYUN_REGISTRY }}/portfolio-admin/portfolio-admin-web:latest
+
+      # 3. 部署到服务器
+      - name: Deploy to Aliyun Server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.ALIYUN_HOST }}
+          username: ${{ secrets.ALIYUN_USERNAME }}
+          key: ${{ secrets.ALIYUN_SSH_KEY }}
+          script: |
+            cd /opt/portfolio-admin
+
+            # 拉取最新镜像
+            docker pull ${{ secrets.ALIYUN_REGISTRY }}/portfolio-admin/portfolio-admin-api:latest
+            docker pull ${{ secrets.ALIYUN_REGISTRY }}/portfolio-admin/portfolio-admin-web:latest
+
+            # 重启容器
+            docker compose down
+            docker compose up -d
+
+            # 清理旧镜像
+            docker image prune -f

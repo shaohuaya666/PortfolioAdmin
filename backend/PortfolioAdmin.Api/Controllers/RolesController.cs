@@ -1,105 +1,64 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using PortfolioAdmin.Api.Data;
+using PortfolioAdmin.Api.Attributes;
 using PortfolioAdmin.Api.DTOs;
-using PortfolioAdmin.Api.Models;
+using PortfolioAdmin.Api.Services;
 
 namespace PortfolioAdmin.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class RolesController : ControllerBase
 {
-    private readonly PortfolioDbContext _db;
+    private readonly IRoleMenuService _service;
 
-    public RolesController(PortfolioDbContext db) => _db = db;
+    public RolesController(IRoleMenuService service) => _service = service;
 
     [HttpGet]
     public async Task<ActionResult<List<RoleDto>>> GetAll()
-    {
-        var roles = await _db.Roles
-            .OrderBy(r => r.Id)
-            .Select(r => new RoleDto
-            {
-                Id = r.Id,
-                Name = r.Name,
-                Description = r.Description,
-                CreatedAt = r.CreatedAt
-            })
-            .ToListAsync();
-        return Ok(roles);
-    }
+        => Ok(await _service.GetRolesAsync());
 
     [HttpGet("{id}")]
     public async Task<ActionResult<RoleDto>> GetById(int id)
     {
-        var role = await _db.Roles.FindAsync(id);
-        if (role == null) return NotFound(new { message = "角色不存在" });
-
-        return Ok(new RoleDto
-        {
-            Id = role.Id,
-            Name = role.Name,
-            Description = role.Description,
-            CreatedAt = role.CreatedAt
-        });
+        var dto = await _service.GetRoleByIdAsync(id);
+        return dto is null ? NotFound(new { message = "角色不存在" }) : Ok(dto);
     }
 
     [HttpPost]
+    [RequirePermission("roles:create")]
     public async Task<ActionResult<RoleDto>> Create([FromBody] CreateRoleRequest req)
     {
-        if (await _db.Roles.AnyAsync(r => r.Name == req.Name))
-            return Conflict(new { message = "角色名已存在" });
-
-        var role = new Role
-        {
-            Name = req.Name,
-            Description = req.Description,
-            CreatedAt = DateTime.Now
-        };
-
-        _db.Roles.Add(role);
-        await _db.SaveChangesAsync();
-
-        return CreatedAtAction(nameof(GetById), new { id = role.Id }, new RoleDto
-        {
-            Id = role.Id,
-            Name = role.Name,
-            Description = role.Description,
-            CreatedAt = role.CreatedAt
-        });
+        var (success, message, data) = await _service.CreateRoleAsync(req);
+        if (!success)
+            return Conflict(new { message });
+        return CreatedAtAction(nameof(GetById), new { id = data!.Id }, data);
     }
 
     [HttpPut("{id}")]
+    [RequirePermission("roles:edit")]
     public async Task<IActionResult> Update(int id, [FromBody] CreateRoleRequest req)
     {
-        var role = await _db.Roles.FindAsync(id);
-        if (role == null) return NotFound(new { message = "角色不存在" });
-
-        if (await _db.Roles.AnyAsync(r => r.Name == req.Name && r.Id != id))
-            return Conflict(new { message = "角色名已存在" });
-
-        role.Name = req.Name;
-        role.Description = req.Description;
-        await _db.SaveChangesAsync();
-
+        var (success, message) = await _service.UpdateRoleAsync(id, req);
+        if (!success)
+        {
+            if (message == "角色不存在") return NotFound(new { message });
+            return Conflict(new { message });
+        }
         return NoContent();
     }
 
     [HttpDelete("{id}")]
+    [RequirePermission("roles:delete")]
     public async Task<IActionResult> Delete(int id)
     {
-        var role = await _db.Roles
-            .Include(r => r.Users)
-            .FirstOrDefaultAsync(r => r.Id == id);
-
-        if (role == null) return NotFound(new { message = "角色不存在" });
-        if (role.Users.Count > 0) return BadRequest(new { message = "该角色下还有用户，无法删除" });
-
-        _db.RoleMenus.RemoveRange(await _db.RoleMenus.Where(rm => rm.RoleId == id).ToListAsync());
-        _db.Roles.Remove(role);
-        await _db.SaveChangesAsync();
-
+        var (success, message) = await _service.DeleteRoleAsync(id);
+        if (!success)
+        {
+            if (message == "角色不存在") return NotFound(new { message });
+            return BadRequest(new { message });
+        }
         return NoContent();
     }
 }

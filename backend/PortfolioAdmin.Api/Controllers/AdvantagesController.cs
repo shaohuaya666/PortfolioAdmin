@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using PortfolioAdmin.Api.Data;
+using PortfolioAdmin.Api.Attributes;
 using PortfolioAdmin.Api.DTOs;
 using PortfolioAdmin.Api.Models;
+using PortfolioAdmin.Api.Services;
 
 namespace PortfolioAdmin.Api.Controllers;
 
@@ -12,59 +12,48 @@ namespace PortfolioAdmin.Api.Controllers;
 [Authorize]
 public class AdvantagesController : ControllerBase
 {
-    private readonly PortfolioDbContext _db;
+    private readonly IPortfolioService _service;
 
-    public AdvantagesController(PortfolioDbContext db) => _db = db;
+    public AdvantagesController(IPortfolioService service) => _service = service;
 
     [HttpGet]
     public async Task<List<Advantage>> GetAll()
-        => await _db.Advantages.OrderBy(a => a.Num).ToListAsync();
+        => await _service.GetAdvantagesAsync();
 
     [HttpGet("{id}")]
     public async Task<ActionResult<Advantage>> GetById(string id)
     {
-        var entity = await _db.Advantages.FindAsync(id);
+        var entity = await _service.GetAdvantageByIdAsync(id);
         return entity is null ? NotFound() : entity;
     }
 
     [HttpPost]
+    [RequirePermission("advantages:create")]
     public async Task<ActionResult<Advantage>> Create(AdvantageRequest dto)
     {
-        if (await _db.Advantages.AnyAsync(a => a.Id == dto.Id))
+        if (await _service.AdvantageExistsAsync(dto.Id))
             return Conflict(new { message = "ID 已存在" });
 
-        var entity = new Advantage
+        var entity = await _service.CreateAdvantageAsync(new Advantage
         {
-            Id = dto.Id,
-            Num = dto.Num,
-            Title = dto.Title,
-            Desc = dto.Desc
-        };
-        _db.Advantages.Add(entity);
-        await _db.SaveChangesAsync();
+            Id = dto.Id, Num = dto.Num, Title = dto.Title, Desc = dto.Desc
+        });
         return CreatedAtAction(nameof(GetById), new { id = entity.Id }, entity);
     }
 
     [HttpPut("{id}")]
+    [RequirePermission("advantages:edit")]
     public async Task<IActionResult> Update(string id, AdvantageRequest dto)
     {
-        var entity = await _db.Advantages.FindAsync(id);
-        if (entity is null) return NotFound();
-
-        entity.Num = dto.Num;
-        entity.Title = dto.Title;
-        entity.Desc = dto.Desc;
-        await _db.SaveChangesAsync();
-        return NoContent();
+        var entity = await _service.UpdateAdvantageAsync(id, dto);
+        return entity is null ? NotFound() : NoContent();
     }
 
     [HttpDelete("{id}")]
+    [RequirePermission("advantages:delete")]
     public async Task<IActionResult> Delete(string id)
     {
-        var entity = await _db.Advantages.FindAsync(id);
-        if (entity is null) return NotFound();
-        _db.Advantages.Remove(entity);
-        await _db.SaveChangesAsync();
-        return NoContent();
+        var success = await _service.DeleteAdvantageAsync(id);
+        return success ? NoContent() : NotFound();
     }
 }

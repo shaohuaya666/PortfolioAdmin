@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using PortfolioAdmin.Api.Data;
+using PortfolioAdmin.Api.Attributes;
 using PortfolioAdmin.Api.DTOs;
 using PortfolioAdmin.Api.Models;
+using PortfolioAdmin.Api.Services;
 
 namespace PortfolioAdmin.Api.Controllers;
 
@@ -12,53 +12,45 @@ namespace PortfolioAdmin.Api.Controllers;
 [Authorize]
 public class SkillCategoriesController : ControllerBase
 {
-    private readonly PortfolioDbContext _db;
+    private readonly IPortfolioService _service;
 
-    public SkillCategoriesController(PortfolioDbContext db) => _db = db;
+    public SkillCategoriesController(IPortfolioService service) => _service = service;
 
     [HttpGet]
     public async Task<List<SkillCategory>> GetAll()
-        => await _db.SkillCategories.Include(c => c.Tags).OrderBy(c => c.Id).ToListAsync();
+        => await _service.GetSkillCategoriesAsync();
 
     [HttpGet("{id}")]
     public async Task<ActionResult<SkillCategory>> GetById(int id)
     {
-        var entity = await _db.SkillCategories.Include(c => c.Tags).FirstOrDefaultAsync(c => c.Id == id);
+        var entity = await _service.GetSkillCategoryByIdAsync(id);
         return entity is null ? NotFound() : entity;
     }
 
     [HttpPost]
+    [RequirePermission("skills:create")]
     public async Task<ActionResult<SkillCategory>> Create(SkillCategoryRequest dto)
     {
-        var entity = new SkillCategory
+        var entity = await _service.CreateSkillCategoryAsync(new SkillCategory
         {
-            Title = dto.Title,
-            ThemeColor = dto.ThemeColor
-        };
-        _db.SkillCategories.Add(entity);
-        await _db.SaveChangesAsync();
+            Title = dto.Title, ThemeColor = dto.ThemeColor
+        });
         return CreatedAtAction(nameof(GetById), new { id = entity.Id }, entity);
     }
 
     [HttpPut("{id}")]
+    [RequirePermission("skills:edit")]
     public async Task<IActionResult> Update(int id, SkillCategoryRequest dto)
     {
-        var entity = await _db.SkillCategories.FindAsync(id);
-        if (entity is null) return NotFound();
-
-        entity.Title = dto.Title;
-        entity.ThemeColor = dto.ThemeColor;
-        await _db.SaveChangesAsync();
-        return NoContent();
+        var entity = await _service.UpdateSkillCategoryAsync(id, dto);
+        return entity is null ? NotFound() : NoContent();
     }
 
     [HttpDelete("{id}")]
+    [RequirePermission("skills:delete")]
     public async Task<IActionResult> Delete(int id)
     {
-        var entity = await _db.SkillCategories.FindAsync(id);
-        if (entity is null) return NotFound();
-        _db.SkillCategories.Remove(entity);
-        await _db.SaveChangesAsync();
-        return NoContent();
+        var success = await _service.DeleteSkillCategoryAsync(id);
+        return success ? NoContent() : NotFound();
     }
 }

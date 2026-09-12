@@ -8,6 +8,7 @@ public class LoginRequest
     public string Username { get; set; } = string.Empty;
     [Required]
     public string Password { get; set; } = string.Empty;
+    public string? CaptchaId { get; set; }
 }
 
 public class LoginResponse
@@ -17,6 +18,7 @@ public class LoginResponse
     public string RoleName { get; set; } = string.Empty;
     public DateTime ExpiresAt { get; set; }
     public List<MenuDto> Menus { get; set; } = new();
+    public List<string> Permissions { get; set; } = new();
 }
 
 public class MenuDto
@@ -27,6 +29,8 @@ public class MenuDto
     public string? Icon { get; set; }
     public int ParentId { get; set; }
     public int Sort { get; set; }
+    public string Type { get; set; } = "menu";
+    public string? PermissionCode { get; set; }
     public List<MenuDto> Children { get; set; } = new();
 }
 

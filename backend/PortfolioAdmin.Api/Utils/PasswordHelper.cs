@@ -5,7 +5,7 @@ namespace PortfolioAdmin.Api.Utils;
 /// <summary>
 /// PBKDF2 密码哈希工具
 /// </summary>
-public static class PasswordHelper
+public class PasswordHelper : IPasswordHasher
 {
     private const int SaltSize = 16;
     private const int HashSize = 32;
@@ -14,7 +14,7 @@ public static class PasswordHelper
     /// <summary>
     /// 对密码进行哈希，返回 "salt.hash" 格式字符串
     /// </summary>
-    public static string Hash(string password)
+    public string Hash(string password)
     {
         byte[] salt = RandomNumberGenerator.GetBytes(SaltSize);
         byte[] hash = Rfc2898DeriveBytes.Pbkdf2(
@@ -30,7 +30,7 @@ public static class PasswordHelper
     /// <summary>
     /// 验证密码是否匹配哈希值
     /// </summary>
-    public static bool Verify(string password, string hashedPassword)
+    public bool Verify(string password, string hashedPassword)
     {
         var parts = hashedPassword.Split('.');
         if (parts.Length != 2)

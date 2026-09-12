@@ -1,8 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using PortfolioAdmin.Api.Data;
-using PortfolioAdmin.Api.DTOs;
+using PortfolioAdmin.Api.Services;
 
 namespace PortfolioAdmin.Api.Controllers;
 
@@ -11,19 +9,11 @@ namespace PortfolioAdmin.Api.Controllers;
 [Authorize]
 public class DashboardController : ControllerBase
 {
-    private readonly PortfolioDbContext _db;
+    private readonly IDashboardService _service;
 
-    public DashboardController(PortfolioDbContext db) => _db = db;
+    public DashboardController(IDashboardService service) => _service = service;
 
     [HttpGet("stats")]
-    public async Task<DashboardStats> GetStats()
-    {
-        return new DashboardStats
-        {
-            ProjectCount = await _db.CompactProjects.CountAsync(),
-            SkillCount = await _db.Tags.CountAsync(),
-            WorkYearCount = await _db.WorkHistories.CountAsync(),
-            DiagnosticCount = await _db.SkillDiagnostics.CountAsync()
-        };
-    }
+    public async Task<IActionResult> GetStats()
+        => Ok(await _service.GetStatsAsync());
 }

@@ -5,7 +5,7 @@
         <h2 class="page-title">技能诊断</h2>
         <p class="page-subtitle !mb-0">管理技能详细诊断数据</p>
       </div>
-      <el-button type="primary" @click="openDialog()" class="!bg-cyan-500 !border-cyan-500">
+      <el-button type="primary" @click="openDialog()" class="!bg-cyan-500 !border-cyan-500" v-permission="'diagnostics:create'">
         <span class="material-symbols-outlined text-sm mr-1" style="font-size:16px;vertical-align:middle;">add</span>
         新增诊断
       </el-button>
@@ -32,8 +32,8 @@
         </el-table-column>
         <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" text @click="openDialog(row)">编辑</el-button>
-            <el-button size="small" text class="!text-red-400" @click="handleDelete(row.id)">删除</el-button>
+            <el-button size="small" text @click="openDialog(row)" v-permission="'diagnostics:edit'">编辑</el-button>
+            <el-button size="small" text class="!text-red-400" @click="handleDelete(row.id)" v-permission="'diagnostics:delete'">删除</el-button>
           </template>
         </el-table-column>
       </el-table>

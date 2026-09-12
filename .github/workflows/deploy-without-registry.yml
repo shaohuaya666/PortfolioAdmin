@@ -1,0 +1,43 @@
+name: Deploy to Aliyun Server (Without Aliyun Registry)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 方案：直接 SSH 到服务器，在服务器上构建镜像
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.ALIYUN_HOST }}
+          username: ${{ secrets.ALIYUN_USERNAME }}
+          key: ${{ secrets.ALIYUN_SSH_KEY }}
+          script: |
+            # 进入项目目录
+            cd /opt/portfolio-admin || mkdir -p /opt/portfolio-admin
+            cd /opt/portfolio-admin
+
+            # 克隆或更新代码
+            if [ -d ".git" ]; then
+              git pull origin main
+            else
+              git clone https://github.com/${{ github.repository }} .
+            fi
+
+            # 构建并启动服务
+            docker-compose -f docker-compose.prod-local.yml build
+            docker-compose -f docker-compose.prod-local.yml up -d
+
+            # 清理旧镜像
+            docker image prune -f
+
+            echo "部署完成！"

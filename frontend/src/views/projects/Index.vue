@@ -5,7 +5,7 @@
         <h2 class="page-title">项目管理</h2>
         <p class="page-subtitle !mb-0">维护项目经历与关联技能</p>
       </div>
-      <el-button type="primary" @click="openDialog()" class="!bg-cyan-500 !border-cyan-500">
+      <el-button type="primary" @click="openDialog()" class="!bg-cyan-500 !border-cyan-500" v-permission="'projects:create'">
         <span class="material-symbols-outlined text-sm mr-1" style="font-size:16px;vertical-align:middle;">add</span>
         新增项目
       </el-button>
@@ -28,10 +28,10 @@
           <span v-for="skill in item.skills" :key="skill.id" class="skill-tag">{{ skill.name }}</span>
         </div>
         <div class="flex gap-1 opacity-0 group-hover:opacity-100 shrink-0">
-          <el-button size="small" text @click="openDialog(item)">
+          <el-button size="small" text @click="openDialog(item)" v-permission="'projects:edit'">
             <span class="material-symbols-outlined text-sm">edit</span>
           </el-button>
-          <el-button size="small" text class="!text-red-400" @click="handleDelete(item.id)">
+          <el-button size="small" text class="!text-red-400" @click="handleDelete(item.id)" v-permission="'projects:delete'">
             <span class="material-symbols-outlined text-sm">delete</span>
           </el-button>
         </div>

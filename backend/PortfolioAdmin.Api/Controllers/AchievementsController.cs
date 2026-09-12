@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using PortfolioAdmin.Api.Data;
+using PortfolioAdmin.Api.Attributes;
 using PortfolioAdmin.Api.DTOs;
 using PortfolioAdmin.Api.Models;
+using PortfolioAdmin.Api.Services;
 
 namespace PortfolioAdmin.Api.Controllers;
 
@@ -12,61 +12,48 @@ namespace PortfolioAdmin.Api.Controllers;
 [Authorize]
 public class AchievementsController : ControllerBase
 {
-    private readonly PortfolioDbContext _db;
+    private readonly IPortfolioService _service;
 
-    public AchievementsController(PortfolioDbContext db) => _db = db;
+    public AchievementsController(IPortfolioService service) => _service = service;
 
     [HttpGet]
     public async Task<List<Achievement>> GetAll([FromQuery] string? workHistoryId)
-    {
-        var query = _db.Achievements.AsQueryable();
-        if (!string.IsNullOrEmpty(workHistoryId))
-            query = query.Where(a => a.WorkHistoryId == workHistoryId);
-        return await query.OrderBy(a => a.Id).ToListAsync();
-    }
+        => await _service.GetAchievementsAsync(workHistoryId);
 
     [HttpGet("{id}")]
     public async Task<ActionResult<Achievement>> GetById(int id)
     {
-        var entity = await _db.Achievements.FindAsync(id);
+        var entity = await _service.GetAchievementByIdAsync(id);
         return entity is null ? NotFound() : entity;
     }
 
     [HttpPost]
+    [RequirePermission("work-history:achievements_create")]
     public async Task<ActionResult<Achievement>> Create(AchievementRequest dto)
     {
-        if (!await _db.WorkHistories.AnyAsync(w => w.Id == dto.WorkHistoryId))
+        if (!await _service.WorkHistoryExistsForAchievementAsync(dto.WorkHistoryId))
             return BadRequest(new { message = "所属工作经历不存在" });
 
-        var entity = new Achievement
+        var entity = await _service.CreateAchievementAsync(new Achievement
         {
-            Description = dto.Description,
-            WorkHistoryId = dto.WorkHistoryId
-        };
-        _db.Achievements.Add(entity);
-        await _db.SaveChangesAsync();
+            Description = dto.Description, WorkHistoryId = dto.WorkHistoryId
+        });
         return CreatedAtAction(nameof(GetById), new { id = entity.Id }, entity);
     }
 
     [HttpPut("{id}")]
+    [RequirePermission("work-history:achievements_edit")]
     public async Task<IActionResult> Update(int id, AchievementRequest dto)
     {
-        var entity = await _db.Achievements.FindAsync(id);
-        if (entity is null) return NotFound();
-
-        entity.Description = dto.Description;
-        entity.WorkHistoryId = dto.WorkHistoryId;
-        await _db.SaveChangesAsync();
-        return NoContent();
+        var entity = await _service.UpdateAchievementAsync(id, dto);
+        return entity is null ? NotFound() : NoContent();
     }
 
     [HttpDelete("{id}")]
+    [RequirePermission("work-history:achievements_delete")]
     public async Task<IActionResult> Delete(int id)
     {
-        var entity = await _db.Achievements.FindAsync(id);
-        if (entity is null) return NotFound();
-        _db.Achievements.Remove(entity);
-        await _db.SaveChangesAsync();
-        return NoContent();
+        var success = await _service.DeleteAchievementAsync(id);
+        return success ? NoContent() : NotFound();
     }
 }

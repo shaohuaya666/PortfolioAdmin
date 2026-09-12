@@ -1,165 +1,156 @@
-# PortfolioAdmin
+# PortfolioAdmin 个人作品集后台管理系统
 
-个人作品集管理后台 — 一个全栈的个人作品集/简历数据管理系统，提供可视化的后台管理界面，方便管理个人技能、项目经历、工作履历等数据。
+前后端分离的个人作品集（简历数据）管理后台。后端基于 **.NET 8 Web API** 提供 RESTful 接口，前端基于 **Vue 3 + TypeScript + Element Plus** 构建深色主题管理界面，用于维护个人核心优势、技术栈、项目、工作经历等作品集数据，并内置 **RBAC 权限体系**（用户 / 角色 / 菜单 + 按钮级权限码）。
+
+## 功能特性
+
+- **内容管理（作品集数据）**
+  - 仪表盘：数据统计总览
+  - 核心优势：个人亮点展示管理
+  - 技术栈矩阵：技能分类 + 技能标签两级维护
+  - 项目管理：项目 + 项目技术栈关联
+  - 工作经历：经历 + 成就 / 亮点关联
+  - 技能诊断：技能评估记录管理
+- **RBAC 权限体系**
+  - 用户管理：增删改查、重置密码、分配角色
+  - 角色管理：角色维护、菜单 / 按钮权限分配
+  - 菜单管理：菜单与操作按钮（`Type=menu/action`）及权限码配置
+  - 登录后返回**动态菜单树 + 权限码列表**，前端侧边栏动态渲染，按钮级权限由 `v-permission` 指令控制，接口层由 `[RequirePermission]` 特性二次校验
+- **认证与安全**
+  - JWT Bearer 认证（令牌 8 小时有效，前后端分离无状态）
+  - 登录滑块验证码（先验证获取凭据，登录成功后才消耗，避免输错密码重复滑动）
+  - 密码 PBKDF2-SHA256 加盐哈希存储
+  - 登录后支持修改密码
 
 ## 技术栈
 
-### 前端
-- **Vue 3** + **TypeScript** + **Vite**
-- **Element Plus** — 企业级 UI 组件库
-- **Pinia** — 状态管理
-- **Vue Router 4** — 路由管理
-- **TailwindCSS** — 原子化 CSS 框架
-- **Axios** — HTTP 请求库
+| 端 | 技术 |
+| --- | --- |
+| 后端 | .NET 8 / ASP.NET Core Web API / EF Core 8 + Pomelo (MySQL) / JWT Bearer / Swashbuckle (Swagger) |
+| 前端 | Vue 3.4 / TypeScript 5.5 / Vite 5 / Element Plus 2.7 / Pinia 2 / Vue Router 4 / TailwindCSS 3 / Axios |
+| 数据库 | MySQL 8（库名 `BlazorPortfolio`） |
 
-### 后端
-- **.NET 8** Web API (C#)
-- **Entity Framework Core** — ORM
-- **MySQL** (Pomelo.EntityFrameworkCore.MySql)
-- **JWT** 认证
-- **Swagger** API 文档
-
-## 功能模块
-
-| 模块 | 说明 |
-|------|------|
-| 仪表盘 | 数据总览，关键指标一目了然 |
-| 核心优势 | 管理个人核心优势/亮点展示 |
-| 技术栈矩阵 | 技能分类（主题色）+ 标签管理（核心技能标记） |
-| 项目管理 | 作品项目录入，关联技术栈标签 |
-| 工作经历 | 履历管理，每家公司的角色、成就维护 |
-| 技能诊断 | 技能评估与状态跟踪 |
-
-## 项目结构
+## 目录结构
 
 ```
 PortfolioAdmin/
-├── backend/                          # 后端 .NET 8 Web API
-│   └── PortfolioAdmin.Api/
-│       ├── Controllers/              # API 控制器
-│       │   ├── AchievementsController.cs
-│       │   ├── AdvantagesController.cs
-│       │   ├── AuthController.cs
-│       │   ├── CompactProjectsController.cs
-│       │   ├── DashboardController.cs
-│       │   ├── ProjectSkillsController.cs
-│       │   ├── SkillCategoriesController.cs
-│       │   ├── SkillDiagnosticsController.cs
-│       │   ├── TagsController.cs
-│       │   └── WorkHistoriesController.cs
-│       ├── Models/                   # 数据模型
-│       │   └── PortfolioData.cs
-│       ├── Data/                     # DbContext
-│       ├── DTOs/                     # 数据传输对象
-│       ├── Services/                 # 业务服务
-│       ├── Middleware/               # 中间件 (JWT)
-│       ├── Program.cs                # 应用入口
-│       └── appsettings.json          # 配置文件
-│
-├── frontend/                         # 前端 Vue 3 + Vite
-│   └── src/
-│       ├── api/                      # API 请求封装
-│       ├── views/                    # 页面组件
-│       │   ├── dashboard/            # 仪表盘
-│       │   ├── advantages/           # 核心优势
-│       │   ├── skills/               # 技术栈矩阵
-│       │   ├── projects/             # 项目管理
-│       │   ├── workHistory/          # 工作经历
-│       │   ├── diagnostics/          # 技能诊断
-│       │   └── login/                # 登录
-│       ├── router/                   # 路由配置
-│       ├── stores/                   # Pinia 状态
-│       ├── layout/                   # 布局组件
-│       ├── components/               # 公共组件
-│       ├── types/                    # TypeScript 类型
-│       └── styles/                   # 全局样式
-│
-└── README.md
+├── backend/                        # 后端服务
+│   ├── PortfolioAdmin.Api/
+│   │   ├── Attributes/             # RequirePermissionAttribute 权限码校验
+│   │   ├── Controllers/            # 15 个 API 控制器（Auth/Captcha/Dashboard/Users/Roles/Menus/RoleMenus/内容 CRUD）
+│   │   ├── Data/                   # PortfolioDbContext（EF Core，反射自动注册实体与级联关系）
+│   │   ├── DTOs/                   # 入参出参（AuthDTOs/CaptchaDTOs/RequestDTOs/RoleMenuDTOs）
+│   │   ├── Middleware/             # IJwtService / JwtHelper（JWT 生成与解析）
+│   │   ├── Models/                 # 实体（内容 8 张表 + RBAC 4 张表）
+│   │   ├── Services/               # 服务接口与实现（IAuthService/IUserService/IRoleMenuService/IDashboardService/IPortfolioService/ICaptchaService）
+│   │   ├── Utils/                  # PasswordHelper（PBKDF2）、CaptchaService（滑块验证码）
+│   │   ├── Program.cs              # 启动入口（CORS/JWT/Swagger/DbContext/服务注册）
+│   │   ├── appsettings.json        # 数据库连接串、JWT 密钥、令牌时效配置
+│   │   └── PortfolioAdmin.Api.csproj
+│   └── init_data.sql               # RBAC 增量初始化脚本（建表 + 默认数据）
+└── frontend/                       # 前端工程（Vite）
+    ├── src/
+    │   ├── api/                    # request.ts（axios 封装）+ modules/（按模块划分 10 个）
+    │   ├── components/             # SliderCaptcha.vue 滑块验证码组件
+    │   ├── directives/             # permission.ts（v-permission 按钮权限指令）
+    │   ├── layout/                 # MainLayout.vue（动态侧边栏菜单 + 面包屑 + 修改密码）
+    │   ├── router/                 # 路由与登录守卫
+    │   ├── stores/                 # Pinia（auth：token/用户/菜单/权限码，localStorage 持久化）
+    │   ├── styles/                 # 全局样式
+    │   ├── types/                  # TS 类型定义
+    │   ├── views/                  # login + 9 个业务页面（Index.vue）
+    │   ├── App.vue
+    │   └── main.ts
+    ├── vite.config.ts              # @ 别名、dev 端口 5173、/api 代理到 5273
+    ├── tailwind.config.js
+    ├── tsconfig.json
+    └── package.json
 ```
+
+## 功能模块
+
+### 页面菜单（登录后按角色动态渲染）
+
+| 菜单 | 路由 | 说明 |
+| --- | --- | --- |
+| 仪表盘 | `/dashboard` | 数据统计总览 |
+| 核心优势 | `/advantages` | 个人优势亮点 |
+| 技术栈矩阵 | `/skills` | 技能分类 + 标签（Tags） |
+| 项目管理 | `/projects` | 项目 + 项目技术栈（ProjectSkills） |
+| 工作经历 | `/work-history` | 经历 + 成就（Achievements） |
+| 技能诊断 | `/diagnostics` | 技能诊断记录 |
+| 用户管理 | `/users` | 用户 CRUD / 重置密码 / 分配角色 |
+| 角色管理 | `/roles` | 角色维护 / 菜单权限分配 |
+| 菜单管理 | `/menus` | 菜单与按钮（权限码）维护 |
+
+### 权限模型
+
+- 菜单分两级：`Type=menu`（页面菜单，进入页面需 `xx:view`）与 `Type=action`（操作按钮，如 `projects:create`）
+- 登录时后端按角色返回**菜单树**与**权限码列表**；前端 `v-permission="'projects:create'"` 控制按钮显隐
+- 接口层使用 `[RequirePermission("projects:create")]` 做二次鉴权（`Order=100`，在认证过滤器之后执行），未授权返回 403
+
+## 数据库
+
+库名：`BlazorPortfolio`（MySQL 8）。共 12 张表：
+
+- 作品集内容（8）：`Advantages`、`SkillCategories`、`Tags`、`WorkHistories`、`Achievements`、`CompactProjects`、`ProjectSkills`、`SkillDiagnostics`
+- RBAC（4）：`Users`、`Roles`、`Menus`、`RoleMenus`
+
+表结构由 EF Core 实体（`Models/`）通过 DataAnnotation + `OnModelCreating` 反射自动注册映射；`backend/init_data.sql` 负责 RBAC 的增量初始化：为 `Users` 补 `RoleId` 列、创建 `Roles` / `Menus` / `RoleMenus` 表、写入「超级管理员」角色、9 个页面菜单 + 操作按钮权限码并全量授权。
+
+## 主要接口
+
+基础路径 `http://localhost:5273/api`，Swagger：`http://localhost:5273/swagger`
+
+| 分组 | 控制器 | 接口 |
+| --- | --- | --- |
+| 认证 | `AuthController` | `POST /auth/login`（携带 captchaId）、`POST /auth/change-password` |
+| 验证码 | `CaptchaController` | `GET /captcha/generate`、`POST /captcha/verify` |
+| RBAC | `UsersController` | 用户 CRUD / 重置密码 / 分配角色 |
+| | `RolesController` | 角色 CRUD |
+| | `MenusController` | 菜单 / 按钮 CRUD |
+| | `RoleMenusController` | 角色授权（勾选菜单） |
+| 内容 | `AdvantagesController` / `SkillCategoriesController` / `TagsController` / `CompactProjectsController` / `ProjectSkillsController` / `WorkHistoriesController` / `AchievementsController` / `SkillDiagnosticsController` | 各模块 CRUD（需对应权限码） |
+| 统计 | `DashboardController` | 仪表盘统计数据 |
 
 ## 快速开始
 
 ### 环境要求
 
-- **Node.js** >= 18
-- **.NET SDK** >= 8.0
-- **MySQL** >= 8.0
+- .NET 8 SDK
+- Node.js 18+
+- MySQL 8
 
-### 后端启动
+
+### 1. 启动后端
 
 ```bash
-# 进入后端目录
 cd backend/PortfolioAdmin.Api
-
-# 修改数据库连接字符串 (appsettings.json)
-# "DefaultConnection": "server=localhost;port=3306;database=blazor_portfolio;user=root;password=yourpassword"
-
-# 运行 EF 迁移（如需自动建表可在代码中启用 EnsureCreated）
-dotnet ef database update
-
-# 启动后端服务（默认 http://localhost:5000）
+# 修改 appsettings.json 中的 ConnectionStrings:DefaultConnection
 dotnet run
-
-# Swagger 文档地址：http://localhost:5000/swagger
 ```
 
-### 前端启动
+- API：`http://localhost:5273`
+- Swagger 文档：`http://localhost:5273/swagger`
+
+### 2. 启动前端
 
 ```bash
-# 进入前端目录
 cd frontend
-
-# 安装依赖
 npm install
-
-# 启动开发服务器（默认 http://localhost:5173）
 npm run dev
-
-# 生产构建
-npm run build
 ```
+
+- 管理后台：`http://localhost:5173`（`/api` 已代理到后端 `5273`）
 
 ### 默认账号
 
-| 用户名 | 密码 |
-|--------|------|
-| admin | admin123 |
+| 用户名 | 密码 | 角色 |
+| --- | --- | --- |
+| `audience‌` | `123456` | 看客（拥有查看权限） |
 
-> 可在 `appsettings.json` → `AdminUser` 节点中修改。
+## 说明
 
-## 数据库
-
-数据库名称：`blazor_portfolio`
-
-核心数据表：
-
-| 表名 | 说明 |
-|------|------|
-| advantages | 核心优势 |
-| skill_categories | 技能分类 |
-| tag_infos | 技能标签 |
-| work_histories | 工作经历 |
-| achievements | 工作成就 |
-| compact_projects | 项目信息 |
-| project_skills | 项目关联技能 |
-| skill_diagnostics | 技能诊断 |
-
-## API 概览
-
-后端提供 RESTful API，通过 JWT Bearer Token 认证。
-
-- `POST /api/auth/login` — 登录获取 Token
-- `GET/POST/PUT/DELETE /api/advantages` — 核心优势 CRUD
-- `GET/POST/PUT/DELETE /api/SkillCategories` — 技能分类 CRUD
-- `GET/POST/PUT/DELETE /api/Tags` — 标签管理 CRUD
-- `GET/POST/PUT/DELETE /api/CompactProjects` — 项目管理 CRUD
-- `GET/POST/PUT/DELETE /api/WorkHistories` — 工作经历 CRUD
-- `GET/POST/PUT/DELETE /api/Achievements` — 成就管理 CRUD
-- `GET/POST/PUT/DELETE /api/SkillDiagnostics` — 技能诊断 CRUD
-- `GET /api/Dashboard` — 仪表盘数据
-
-> 完整 API 文档请启动后端后访问 `http://localhost:5000/swagger`
-
-## License
-
-MIT
+- 前端采用深色主题（侧边栏 `#061829`、主色青 `#06b6d4`），图标使用 Material Symbols Outlined 字体，需联网加载 Google Fonts
+- 后端 JSON 输出统一 camelCase，循环引用自动忽略
+- JWT 默认有效期 480 分钟，过期或未携带 Token 访问受保护接口返回 401，前端自动跳转登录页
