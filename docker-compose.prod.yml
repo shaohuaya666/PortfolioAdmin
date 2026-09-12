@@ -1,0 +1,46 @@
+services:
+  backend:
+    image: ${ALIYUN_REGISTRY}/portfolio-admin/portfolio-admin-api:latest
+    container_name: portfolio-backend
+    restart: always
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:80
+      # 生产环境的连接字符串从环境变量读取
+      ConnectionStrings__DefaultConnection: ${DB_CONNECTION_STRING}
+      JwtSettings__Secret: ${JWT_SECRET}
+      JwtSettings__Issuer: ${JWT_ISSUER}
+      JwtSettings__Audience: ${JWT_AUDIENCE}
+    networks:
+      - portfolio-net
+
+  frontend:
+    image: ${ALIYUN_REGISTRY}/portfolio-admin/portfolio-admin-web:latest
+    container_name: portfolio-frontend
+    restart: always
+    depends_on:
+      - backend
+    networks:
+      - portfolio-net
+
+  # Nginx 反向代理
+  nginx:
+    image: nginx:alpine
+    container_name: portfolio-nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro  # SSL 证书目录
+      - ./nginx/logs:/var/log/nginx
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - portfolio-net
+
+networks:
+  portfolio-net:
+    driver: bridge
