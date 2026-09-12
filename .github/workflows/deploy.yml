@@ -18,7 +18,7 @@ jobs:
       # 2. 登录阿里云容器镜像服务
       - name: Login to Aliyun Container Registry
         run: |
-          echo "${{ secrets.ALIYUN_REGISTRY_PASSWORD }}" | docker login ${{ secrets.ALIYUN_REGISTRY }} --username ${{ secrets.ALIYUN_REGISTRY_USERNAME }} --password-stdin
+          echo "${{ secrets.ALIYUN_REGISTRY_PASSWORD }}" | docker login --username "${{ secrets.ALIYUN_REGISTRY_USERNAME }}" --password-stdin ${{ secrets.ALIYUN_REGISTRY }}
 
       # 构建后端镜像
       - name: Build and push backend image
