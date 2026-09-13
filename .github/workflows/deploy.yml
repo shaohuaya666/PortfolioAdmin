@@ -63,15 +63,50 @@ jobs:
           username: ${{ secrets.ALIYUN_USERNAME }}
           key: ${{ secrets.ALIYUN_SSH_KEY }}
           script: |
+            set -e
+            echo "========== 开始部署 =========="
+
             cd /opt/portfolio-admin
+            echo "✓ 当前目录: $(pwd)"
+
+            # 检查 docker-compose 文件是否存在
+            if [ ! -f "docker-compose.prod.yml" ]; then
+              echo "❌ 错误: docker-compose.prod.yml 文件不存在"
+              exit 1
+            fi
+            echo "✓ docker-compose.prod.yml 文件存在"
 
             # 拉取最新镜像
+            echo "========== 拉取镜像 =========="
             docker pull ${{ secrets.ALIYUN_REGISTRY }}/portfolio-admin/portfolio-admin-api:latest
             docker pull ${{ secrets.ALIYUN_REGISTRY }}/portfolio-admin/portfolio-admin-web:latest
+            echo "✓ 镜像拉取完成"
 
-            # 重启容器
-            docker compose down
-            docker compose up -d
+            # 停止旧容器
+            echo "========== 停止旧容器 =========="
+            docker compose -f docker-compose.prod.yml down || true
+
+            # 启动新容器
+            echo "========== 启动新容器 =========="
+            docker compose -f docker-compose.prod.yml up -d
+
+            # 等待容器启动
+            echo "========== 等待容器启动 =========="
+            sleep 5
+
+            # 检查容器状态
+            echo "========== 容器状态 =========="
+            docker compose -f docker-compose.prod.yml ps
+
+            # 检查容器日志（最后10行）
+            echo "========== 后端容器日志 =========="
+            docker logs portfolio-backend --tail 10 || echo "无法获取后端日志"
+
+            echo "========== 前端容器日志 =========="
+            docker logs portfolio-frontend --tail 10 || echo "无法获取前端日志"
 
             # 清理旧镜像
+            echo "========== 清理旧镜像 =========="
             docker image prune -f
+
+            echo "========== 部署完成 =========="
