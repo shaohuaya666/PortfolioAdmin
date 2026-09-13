@@ -15,12 +15,31 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. 登录阿里云容器镜像服务
+      # 2. 验证 Secrets 配置
+      - name: Verify Secrets Configuration
+        run: |
+          if [ -z "${{ secrets.ALIYUN_REGISTRY }}" ]; then
+            echo "❌ 错误: ALIYUN_REGISTRY secret 未设置或为空"
+            exit 1
+          fi
+          if [ -z "${{ secrets.ALIYUN_REGISTRY_USERNAME }}" ]; then
+            echo "❌ 错误: ALIYUN_REGISTRY_USERNAME secret 未设置或为空"
+            exit 1
+          fi
+          if [ -z "${{ secrets.ALIYUN_REGISTRY_PASSWORD }}" ]; then
+            echo "❌ 错误: ALIYUN_REGISTRY_PASSWORD secret 未设置或为空"
+            exit 1
+          fi
+          echo "✓ Registry: ${{ secrets.ALIYUN_REGISTRY }}"
+          echo "✓ Username: ${{ secrets.ALIYUN_REGISTRY_USERNAME }}"
+          echo "✓ 所有 secrets 配置正确"
+
+      # 3. 登录阿里云容器镜像服务
       - name: Login to Aliyun Container Registry
         run: |
           echo "${{ secrets.ALIYUN_REGISTRY_PASSWORD }}" | docker login --username "${{ secrets.ALIYUN_REGISTRY_USERNAME }}" --password-stdin ${{ secrets.ALIYUN_REGISTRY }}
 
-      # 3. 构建后端镜像
+      # 4. 构建后端镜像
       - name: Build and push backend image
         run: |
           docker build -t ${{ secrets.ALIYUN_REGISTRY }}/portfolio-admin/portfolio-admin-api:${{ github.sha }} ./backend
@@ -28,7 +47,7 @@ jobs:
           docker push ${{ secrets.ALIYUN_REGISTRY }}/portfolio-admin/portfolio-admin-api:${{ github.sha }}
           docker push ${{ secrets.ALIYUN_REGISTRY }}/portfolio-admin/portfolio-admin-api:latest
 
-      # 4. 构建前端镜像
+      # 5. 构建前端镜像
       - name: Build and push frontend image
         run: |
           docker build -t ${{ secrets.ALIYUN_REGISTRY }}/portfolio-admin/portfolio-admin-web:${{ github.sha }} ./frontend
@@ -36,7 +55,7 @@ jobs:
           docker push ${{ secrets.ALIYUN_REGISTRY }}/portfolio-admin/portfolio-admin-web:${{ github.sha }}
           docker push ${{ secrets.ALIYUN_REGISTRY }}/portfolio-admin/portfolio-admin-web:latest
 
-      # 5. 部署到服务器
+      # 6. 部署到服务器
       - name: Deploy to Aliyun Server
         uses: appleboy/ssh-action@v1.0.3
         with:
