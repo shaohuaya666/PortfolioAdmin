@@ -25,12 +25,12 @@ services:
 
   # Nginx 反向代理
   nginx:
-    image: nginx:alpine
+    image: swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/nginx:alpine
     container_name: portfolio-nginx
     restart: always
     ports:
-      - "80:80"
-      - "443:443"
+      - "5001:80"
+      - "5443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro  # SSL 证书目录
