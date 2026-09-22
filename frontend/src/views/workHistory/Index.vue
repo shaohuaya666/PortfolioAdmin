@@ -58,7 +58,7 @@
     <!-- 工作经历弹窗 -->
     <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑经历' : '新增经历'" width="480px" top="12vh">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="60px">
-        <el-form-item label="ID" prop="id">
+        <el-form-item label="编号" prop="id">
           <el-input v-model="form.id" :disabled="isEdit" placeholder="如: exp-1" />
         </el-form-item>
         <el-form-item label="公司" prop="company">
@@ -101,11 +101,11 @@ const achInputs = ref<Record<string, string>>({})
 
 const form = reactive({ id: '', company: '', role: '', period: '', desc: '', isCurrent: false })
 const rules: FormRules = {
-  id: [{ required: true }],
-  company: [{ required: true }],
-  role: [{ required: true }],
-  period: [{ required: true }],
-  desc: [{ required: true }],
+  id: [{ required: true, message: '请输入编号', trigger: 'blur' }],
+  company: [{ required: true, message: '请输入公司名称', trigger: 'blur' }],
+  role: [{ required: true, message: '请输入职位名称', trigger: 'blur' }],
+  period: [{ required: true, message: '请输入起止时间', trigger: 'blur' }],
+  desc: [{ required: true, message: '请输入工作描述', trigger: 'blur' }],
 }
 
 async function loadData() {

@@ -1,7 +1,7 @@
 <template>
   <div>
     <h2 class="page-title">仪表盘概览</h2>
-    <p class="page-subtitle">Portfolio 数据总览</p>
+    <p class="page-subtitle">作品集数据总览</p>
 
     <!-- 统计卡片 -->
     <div class="grid grid-cols-4 gap-5 mb-8">

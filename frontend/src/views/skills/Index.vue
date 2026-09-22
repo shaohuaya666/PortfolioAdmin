@@ -55,7 +55,7 @@
     <el-dialog v-model="catDialogVisible" :title="catIsEdit ? '编辑分类' : '新增分类'" width="420px" top="15vh">
       <el-form :model="catForm" label-width="60px">
         <el-form-item label="名称"><el-input v-model="catForm.title" placeholder="分类名称" /></el-form-item>
-        <el-form-item label="颜色"><el-input v-model="catForm.themeColor" placeholder="primary / secondary" /></el-form-item>
+        <el-form-item label="颜色"><el-input v-model="catForm.themeColor" placeholder="主题色取值，如: primary" /></el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="catDialogVisible = false">取消</el-button>
