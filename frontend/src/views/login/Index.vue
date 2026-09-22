@@ -7,7 +7,6 @@
 
       <div class="login-header">
         <span class="material-symbols-outlined login-logo">neurology</span>
-        <h1>架构师</h1>
         <p>作品集管理后台</p>
       </div>
 
