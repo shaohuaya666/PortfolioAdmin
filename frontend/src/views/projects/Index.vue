@@ -40,7 +40,7 @@
 
     <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑项目' : '新增项目'" width="560px" top="10vh">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="70px">
-        <el-form-item label="ID" prop="id">
+        <el-form-item label="编号" prop="id">
           <el-input v-model="form.id" :disabled="isEdit" placeholder="如: new-project" />
         </el-form-item>
         <el-form-item label="名称" prop="title">
@@ -89,11 +89,11 @@ const newSkill = ref('')
 
 const form = reactive({ id: '', title: '', type: '', year: '', desc: '', skills: [] as string[] })
 const rules: FormRules = {
-  id: [{ required: true }],
-  title: [{ required: true }],
-  type: [{ required: true }],
-  year: [{ required: true }],
-  desc: [{ required: true }],
+  id: [{ required: true, message: '请输入编号', trigger: 'blur' }],
+  title: [{ required: true, message: '请输入项目名称', trigger: 'blur' }],
+  type: [{ required: true, message: '请输入项目类型', trigger: 'blur' }],
+  year: [{ required: true, message: '请输入年份', trigger: 'blur' }],
+  desc: [{ required: true, message: '请输入项目描述', trigger: 'blur' }],
 }
 
 async function loadData() {

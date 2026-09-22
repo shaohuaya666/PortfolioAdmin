@@ -82,10 +82,10 @@ const formRef = ref<FormInstance>()
 
 const form = reactive({ id: 0, tagName: '', desc: '', stat: '', status: '熟练' })
 const rules: FormRules = {
-  tagName: [{ required: true }],
-  desc: [{ required: true }],
-  stat: [{ required: true }],
-  status: [{ required: true }],
+  tagName: [{ required: true, message: '请输入标签名', trigger: 'blur' }],
+  desc: [{ required: true, message: '请输入描述', trigger: 'blur' }],
+  stat: [{ required: true, message: '请输入统计数据', trigger: 'blur' }],
+  status: [{ required: true, message: '请选择状态', trigger: 'change' }],
 }
 
 async function loadData() {

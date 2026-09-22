@@ -35,7 +35,7 @@
     </div>
 
     <!-- 弹窗 -->
-    <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑' : '新增'" width="460px" top="15vh">
+    <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑菜单' : '新增菜单'" width="460px" top="15vh">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
         <el-form-item label="类型" prop="type">
           <el-radio-group v-model="form.type">
@@ -53,7 +53,7 @@
           <el-input v-model="form.permissionCode" placeholder="如: projects:create" />
         </el-form-item>
         <el-form-item label="图标" v-if="form.type === 'menu'">
-          <el-input v-model="form.icon" placeholder="Material Icons 名称" />
+          <el-input v-model="form.icon" placeholder="Material 图标名称" />
         </el-form-item>
         <el-form-item label="父菜单" prop="parentId">
           <el-select v-model="form.parentId" class="!w-full" placeholder="顶级">

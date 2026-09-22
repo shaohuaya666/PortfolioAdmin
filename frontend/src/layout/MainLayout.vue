@@ -6,7 +6,7 @@
         <div class="sidebar-logo">
           <span class="material-symbols-outlined logo-icon">neurology</span>
           <div>
-            <div class="logo-text">ARCHITECT</div>
+            <div class="logo-text">架构师</div>
             <div class="logo-sub">管理后台</div>
           </div>
         </div>
@@ -106,7 +106,7 @@ const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 
-const username = computed(() => authStore.username || 'Admin')
+const username = computed(() => authStore.username || '未登录')
 
 // 根据当前路由路径，从菜单树中构建完整面包屑路径
 const currentTitle = computed(() => {
