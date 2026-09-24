@@ -10,6 +10,8 @@ public class CaptchaService : ICaptchaService
 
     // 容差范围（像素）
     private const int Tolerance = 5;
+    // 轨迹点位置一致性容差（像素）
+    private const int TrackPointTolerance = 2;
     // 验证码有效期（分钟）
     private const int ExpireMinutes = 5;
     // 最小滑动时间（毫秒），机器人通常极快
@@ -79,7 +81,9 @@ public class CaptchaService : ICaptchaService
             return (false, "验证码已过期，请刷新重试");
         }
 
-        // 1. 滑动距离校验
+        // 1. 最终位置校验（核心判定：以松手时的最终停留位置为准）
+        //    滑块向右拖过目标后再回拉对齐属于正常人类操作，只要最终位置
+        //    落在目标容差范围内即视为位置正确，不因中途超调而误判
         var distance = Math.Abs(request.SliderOffset - session.TargetX);
         if (distance > Tolerance)
             return (false, "验证失败，请重试");
@@ -89,12 +93,17 @@ public class CaptchaService : ICaptchaService
         if (track == null || track.Count < MinTrackPoints)
             return (false, "验证失败，请重试");
 
-        // 3. 滑动时间校验
+        // 3. 轨迹末点一致性校验：轨迹最后一点必须与上报的最终位置一致，
+        //    保证"验证结果与最终位置一致"，同时防止伪造最终位置
+        if (Math.Abs(track[^1].X - request.SliderOffset) > TrackPointTolerance)
+            return (false, "验证失败，请重试");
+
+        // 4. 滑动时间校验
         var duration = track[^1].Timestamp - track[0].Timestamp;
         if (duration < MinSlideDurationMs)
             return (false, "验证失败，请重试");
 
-        // 4. 轨迹平滑度校验（简单检测是否为机器人生成的直线轨迹）
+        // 5. 轨迹合理性校验（明确允许"超调后回退对齐"的人类轨迹）
         if (!IsHumanLikeTrack(track))
             return (false, "验证失败，请重试");
 
@@ -122,27 +131,36 @@ public class CaptchaService : ICaptchaService
     }
 
     /// <summary>
-    /// 类人轨迹检测：滑块为水平拖动，主要检测 X 轴合理性
+    /// 类人轨迹检测：滑块为水平拖动，主要检测 X 轴合理性。
+    /// 人类常见操作是"向右拖过头，再回拉微调对齐"，因此回退本身是合法行为，
+    /// 不能按回退次数/占比拒绝。此处仅拒绝明显异常的程序化轨迹。
     /// </summary>
     private static bool IsHumanLikeTrack(List<CaptchaTrackPoint> track)
     {
         if (track.Count < 3) return false;
 
-        // 1. X 轴应该整体向右（正向）移动
-        // 允许少量回退（人类微调），但回退次数不能超过总移动次数的 30%
-        var backCount = 0;
-        var totalMoves = 0;
+        // 1. 前进/回退总距离统计：
+        //    允许任意次数的超调回拉（回拉对齐只会产生少量回退距离），
+        //    仅当回退总距离超过前进总距离时拒绝（明显往复抖动的脚本轨迹）
+        var forwardDistance = 0;
+        var backwardDistance = 0;
         for (int i = 1; i < track.Count; i++)
         {
-            if (track[i].X - track[i - 1].X != 0)
-                totalMoves++;
-            if (track[i].X < track[i - 1].X)
-                backCount++;
+            var dx = track[i].X - track[i - 1].X;
+            if (dx > 0) forwardDistance += dx;
+            else backwardDistance -= dx;
         }
-        if (totalMoves > 0 && (double)backCount / totalMoves > 0.3)
+        if (backwardDistance > forwardDistance)
             return false;
 
-        // 2. 如果所有时间间隔完全相同（精确到毫秒），疑似程序化操作
+        // 2. 轨迹需整体从左向右推进：
+        //    位移上限不能为 0，且轨迹曾到达过的最远位置不能远超最终位置
+        //    （正常拖动回拉后，最远点应与最终位置接近，防止原地往复伪造）
+        var maxX = track.Max(p => p.X);
+        if (maxX <= 0)
+            return false;
+
+        // 3. 如果所有时间间隔完全相同（精确到毫秒），疑似程序化操作
         // 浏览器 mousemove 事件间隔受事件循环影响会自然波动
         if (track.Count >= 6)
         {

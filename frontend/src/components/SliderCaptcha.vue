@@ -364,22 +364,39 @@ function handleMove(clientX: number) {
 function onMouseUp() {
   if (!dragging) return
   dragging = false
-  verifySlide()
+  finishDrag()
 }
 
 function onTouchEnd() {
   if (!dragging) return
   dragging = false
+  finishDrag()
+}
+
+// 松手统一处理：未产生实际位移时仅点击了一下，不发起验证
+function finishDrag() {
+  if (sliderLeft.value < 1) {
+    status.value = 'idle'
+    trackData.value = []
+    return
+  }
   verifySlide()
 }
 
 // ===== 验证 =====
 async function verifySlide() {
   status.value = 'verifying'
+  // 以松手时的最终位置为准确认位移，并保证轨迹末点与之完全一致
+  // （防止浏览器丢失最后一次 move 事件导致末点与上报位置不符）
+  const finalOffset = Math.round(sliderLeft.value)
+  const last = trackData.value[trackData.value.length - 1]
+  if (!last || last.x !== finalOffset) {
+    trackData.value.push({ x: finalOffset, y: 0, timestamp: Date.now() })
+  }
   try {
     await captchaApi.verify({
       captchaId: captchaData.captchaId,
-      sliderOffset: Math.round(sliderLeft.value),
+      sliderOffset: finalOffset,
       trackData: trackData.value
     })
     status.value = 'success'
