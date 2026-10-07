@@ -390,4 +390,72 @@ public class PortfolioService : IPortfolioService
         await _db.SaveChangesAsync();
         return true;
     }
+
+    // ============ ProjectDeliverables ============
+    public async Task<List<ProjectDeliverable>> GetProjectDeliverablesAsync(string? projectId = null, string? status = null)
+    {
+        var query = _db.ProjectDeliverables.AsQueryable();
+        if (!string.IsNullOrEmpty(projectId))
+            query = query.Where(d => d.ProjectId == projectId);
+        if (!string.IsNullOrEmpty(status))
+            query = query.Where(d => d.Status == status);
+        return await query.OrderBy(d => d.SortOrder).ThenBy(d => d.Name).AsNoTracking().ToListAsync();
+    }
+
+    public async Task<ProjectDeliverable?> GetProjectDeliverableByIdAsync(string id)
+    {
+        return await _db.ProjectDeliverables.FindAsync(id);
+    }
+
+    public async Task<bool> ProjectDeliverableExistsAsync(string id)
+    {
+        return await _db.ProjectDeliverables.AnyAsync(d => d.Id == id);
+    }
+
+    public async Task<bool> CompactProjectExistsForDeliverableAsync(string projectId)
+    {
+        return await _db.CompactProjects.AnyAsync(p => p.Id == projectId);
+    }
+
+    public async Task<ProjectDeliverable> CreateProjectDeliverableAsync(ProjectDeliverable entity)
+    {
+        _db.ProjectDeliverables.Add(entity);
+        await _db.SaveChangesAsync();
+        return entity;
+    }
+
+    public async Task<ProjectDeliverable?> UpdateProjectDeliverableAsync(string id, ProjectDeliverableRequest dto)
+    {
+        var entity = await _db.ProjectDeliverables.FindAsync(id);
+        if (entity == null) return null;
+
+        if (dto.Id != id && await _db.ProjectDeliverables.AnyAsync(d => d.Id == dto.Id))
+            return null;
+
+        entity.Id = dto.Id;
+        entity.Name = dto.Name;
+        entity.Version = dto.Version;
+        entity.Description = dto.Description;
+        entity.Status = dto.Status;
+        entity.Url = dto.Url;
+        entity.CoverImage = dto.CoverImage;
+        entity.TechTags = dto.TechTags;
+        entity.CompletedAt = dto.CompletedAt;
+        entity.Owner = dto.Owner;
+        entity.Remark = dto.Remark;
+        entity.SortOrder = dto.SortOrder;
+        entity.IsPublic = dto.IsPublic;
+        entity.ProjectId = string.IsNullOrEmpty(dto.ProjectId) ? null : dto.ProjectId;
+        await _db.SaveChangesAsync();
+        return entity;
+    }
+
+    public async Task<bool> DeleteProjectDeliverableAsync(string id)
+    {
+        var entity = await _db.ProjectDeliverables.FindAsync(id);
+        if (entity == null) return false;
+        _db.ProjectDeliverables.Remove(entity);
+        await _db.SaveChangesAsync();
+        return true;
+    }
 }

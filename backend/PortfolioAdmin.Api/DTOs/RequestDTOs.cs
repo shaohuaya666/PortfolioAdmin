@@ -95,6 +95,37 @@ public class SkillDiagnosticRequest
     public string Status { get; set; } = string.Empty;
 }
 
+// ========== ProjectDeliverable ==========
+public class ProjectDeliverableRequest
+{
+    [Required, MaxLength(50)]
+    public string Id { get; set; } = string.Empty;
+    [Required, MaxLength(200)]
+    public string Name { get; set; } = string.Empty;
+    [MaxLength(50)]
+    public string Version { get; set; } = string.Empty;
+    [MaxLength(1000)]
+    public string Description { get; set; } = string.Empty;
+    [MaxLength(50)]
+    public string Status { get; set; } = "draft";
+    [MaxLength(500)]
+    public string Url { get; set; } = string.Empty;
+    [MaxLength(500)]
+    public string CoverImage { get; set; } = string.Empty;
+    [MaxLength(500)]
+    public string TechTags { get; set; } = string.Empty;
+    [MaxLength(50)]
+    public string CompletedAt { get; set; } = string.Empty;
+    [MaxLength(100)]
+    public string Owner { get; set; } = string.Empty;
+    [MaxLength(500)]
+    public string Remark { get; set; } = string.Empty;
+    public int SortOrder { get; set; }
+    public bool IsPublic { get; set; } = true;
+    [MaxLength(50)]
+    public string? ProjectId { get; set; }
+}
+
 // ========== Sort / Batch ==========
 public class SortOrderRequest
 {

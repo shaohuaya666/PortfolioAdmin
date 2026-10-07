@@ -39,6 +39,12 @@ const router = createRouter({
           meta: { title: '项目管理', icon: 'deployed_code' }
         },
         {
+          path: 'deliverables',
+          name: 'Deliverables',
+          component: () => import('@/views/deliverables/Index.vue'),
+          meta: { title: '项目成品', icon: 'inventory_2' }
+        },
+        {
           path: 'work-history',
           name: 'WorkHistory',
           component: () => import('@/views/workHistory/Index.vue'),

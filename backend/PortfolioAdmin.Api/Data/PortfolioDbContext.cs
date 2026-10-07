@@ -17,6 +17,7 @@ public class PortfolioDbContext : DbContext
     public DbSet<Achievement> Achievements => Set<Achievement>();
     public DbSet<CompactProject> CompactProjects => Set<CompactProject>();
     public DbSet<ProjectSkill> ProjectSkills => Set<ProjectSkill>();
+    public DbSet<ProjectDeliverable> ProjectDeliverables => Set<ProjectDeliverable>();
     public DbSet<SkillDiagnostic> SkillDiagnostics => Set<SkillDiagnostic>();
     public DbSet<User> Users => Set<User>();
     public DbSet<Role> Roles => Set<Role>();
