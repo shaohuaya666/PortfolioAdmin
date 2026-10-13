@@ -40,7 +40,12 @@
     <div v-if="viewMode === 'card'" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       <div v-for="item in filtered" :key="item.id" class="card-panel overflow-hidden group !p-0 flex flex-col">
         <div class="cover-box">
-          <img v-if="item.coverImage" :src="item.coverImage" :alt="item.name" class="w-full h-full object-cover" />
+          <img
+            v-if="item.coverImage"
+            :src="getCoverImageUrl(item.coverImage)"
+            :alt="item.name"
+            class="w-full h-full object-cover"
+            @error="handleImageError" />
           <div v-else class="w-full h-full flex items-center justify-center">
             <span class="material-symbols-outlined cover-placeholder">inventory_2</span>
           </div>
@@ -98,7 +103,12 @@
       <el-table :data="filtered" class="deliverable-table">
         <el-table-column label="封面" width="72">
           <template #default="{ row }">
-            <img v-if="row.coverImage" :src="row.coverImage" class="thumb" :alt="row.name" />
+            <img
+              v-if="row.coverImage"
+              :src="getCoverImageUrl(row.coverImage)"
+              class="thumb"
+              :alt="row.name"
+              @error="handleImageError" />
             <div v-else class="thumb thumb-empty flex items-center justify-center">
               <span class="material-symbols-outlined" style="font-size:14px;color:#475569">inventory_2</span>
             </div>
@@ -227,6 +237,9 @@ import { deliverablesApi } from '@/api/modules/deliverables'
 import { projectsApi } from '@/api/modules/projects'
 import type { ProjectDeliverable, CompactProject } from '@/types'
 
+// 默认封面图
+const DEFAULT_COVER = '/images/default-cover.svg'
+
 // 状态字典
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
   draft: { label: '草稿', color: '#94a3b8' },
@@ -243,6 +256,21 @@ function splitTags(tags: string): string[] {
 }
 function projectName(projectId: string | null) {
   return projects.value.find(p => p.id === projectId)?.title || ''
+}
+
+// 图片处理函数
+function getCoverImageUrl(coverImage: string): string {
+  if (!coverImage || coverImage.trim() === '') {
+    return DEFAULT_COVER
+  }
+  return coverImage
+}
+
+function handleImageError(event: Event) {
+  const img = event.target as HTMLImageElement
+  if (img.src !== DEFAULT_COVER) {
+    img.src = DEFAULT_COVER
+  }
 }
 
 // 列表数据

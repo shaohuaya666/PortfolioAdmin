@@ -1,0 +1,54 @@
+<svg width="800" height="450" xmlns="http://www.w3.org/2000/svg">
+  <!-- 云原生运维主题：容器 + Kubernetes -->
+  <defs>
+    <linearGradient id="bg3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0c4a6e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#164e63;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="container" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#06b6d4;stop-opacity:0.8" />
+      <stop offset="100%" style="stop-color:#0e7490;stop-opacity:0.8" />
+    </linearGradient>
+  </defs>
+
+  <!-- 背景 -->
+  <rect width="800" height="450" fill="url(#bg3)"/>
+
+  <!-- 六边形网格装饰 -->
+  <g opacity="0.1" stroke="#06b6d4" fill="none" stroke-width="2">
+    <polygon points="150,50 200,80 200,140 150,170 100,140 100,80"/>
+    <polygon points="300,50 350,80 350,140 300,170 250,140 250,80"/>
+    <polygon points="450,50 500,80 500,140 450,170 400,140 400,80"/>
+    <polygon points="600,50 650,80 650,140 600,170 550,140 550,80"/>
+    <polygon points="225,170 275,200 275,260 225,290 175,260 175,200"/>
+    <polygon points="375,170 425,200 425,260 375,290 325,260 325,200"/>
+    <polygon points="525,170 575,200 575,260 525,290 475,260 475,200"/>
+  </g>
+
+  <!-- 容器图标 -->
+  <g transform="translate(280, 150)">
+    <!-- 主容器 -->
+    <rect x="0" y="0" width="240" height="140" rx="8" fill="url(#container)" stroke="#22d3ee" stroke-width="2"/>
+    <rect x="10" y="10" width="220" height="25" rx="4" fill="rgba(6, 182, 212, 0.3)"/>
+    <circle cx="25" cy="22" r="5" fill="#22d3ee"/>
+    <circle cx="45" cy="22" r="5" fill="#22d3ee"/>
+    <circle cx="65" cy="22" r="5" fill="#22d3ee"/>
+
+    <!-- 内部小容器 -->
+    <rect x="20" y="50" width="90" height="70" rx="4" fill="rgba(2, 132, 199, 0.4)" stroke="#38bdf8" stroke-width="1.5"/>
+    <rect x="130" y="50" width="90" height="70" rx="4" fill="rgba(2, 132, 199, 0.4)" stroke="#38bdf8" stroke-width="1.5"/>
+
+    <!-- 代码行 -->
+    <rect x="30" y="65" width="50" height="3" rx="1.5" fill="#7dd3fc"/>
+    <rect x="30" y="75" width="40" height="3" rx="1.5" fill="#7dd3fc"/>
+    <rect x="30" y="85" width="60" height="3" rx="1.5" fill="#7dd3fc"/>
+
+    <rect x="140" y="65" width="55" height="3" rx="1.5" fill="#7dd3fc"/>
+    <rect x="140" y="75" width="45" height="3" rx="1.5" fill="#7dd3fc"/>
+    <rect x="140" y="85" width="50" height="3" rx="1.5" fill="#7dd3fc"/>
+  </g>
+
+  <!-- 标题 -->
+  <text x="400" y="360" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="#22d3ee" text-anchor="middle">OpsPilot 运维平台</text>
+  <text x="400" y="390" font-family="Arial, sans-serif" font-size="16" fill="#64748b" text-anchor="middle">Cloud Native · Container Orchestration</text>
+</svg>
