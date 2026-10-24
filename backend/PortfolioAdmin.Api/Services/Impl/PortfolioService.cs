@@ -1,17 +1,25 @@
 using Microsoft.EntityFrameworkCore;
+using PortfolioAdmin.Api.Caching;
 using PortfolioAdmin.Api.Data;
 using PortfolioAdmin.Api.DTOs;
 using PortfolioAdmin.Api.Models;
 
 namespace PortfolioAdmin.Api.Services;
 
+/// <remarks>
+/// 本项目与前台站点 BlazorPortfolio 共用同一个数据库。<br/>
+/// 凡影响前台展示数据的写操作，在事务提交后同步删除前台对应缓存键，
+/// 映射关系见每个写方法上方的注释。失效失败不影响本次写入结果。
+/// </remarks>
 public class PortfolioService : IPortfolioService
 {
     private readonly PortfolioDbContext _db;
+    private readonly IBlazorPortfolioCacheInvalidator _cache;
 
-    public PortfolioService(PortfolioDbContext db)
+    public PortfolioService(PortfolioDbContext db, IBlazorPortfolioCacheInvalidator cache)
     {
         _db = db;
+        _cache = cache;
     }
 
     // ============ Advantages ============
@@ -30,13 +38,16 @@ public class PortfolioService : IPortfolioService
         return await _db.Advantages.AnyAsync(a => a.Id == id);
     }
 
+    /// <summary>影响 Advantages 表 → 失效 Portfolio_Advantages</summary>
     public async Task<Advantage> CreateAdvantageAsync(Advantage entity)
     {
         _db.Advantages.Add(entity);
         await _db.SaveChangesAsync();
+        await _cache.InvalidateAdvantagesAsync();
         return entity;
     }
 
+    /// <summary>影响 Advantages 表 → 失效 Portfolio_Advantages</summary>
     public async Task<Advantage?> UpdateAdvantageAsync(string id, AdvantageRequest dto)
     {
         var entity = await _db.Advantages.FindAsync(id);
@@ -50,15 +61,18 @@ public class PortfolioService : IPortfolioService
         entity.Title = dto.Title;
         entity.Desc = dto.Desc;
         await _db.SaveChangesAsync();
+        await _cache.InvalidateAdvantagesAsync();
         return entity;
     }
 
+    /// <summary>影响 Advantages 表 → 失效 Portfolio_Advantages</summary>
     public async Task<bool> DeleteAdvantageAsync(string id)
     {
         var entity = await _db.Advantages.FindAsync(id);
         if (entity == null) return false;
         _db.Advantages.Remove(entity);
         await _db.SaveChangesAsync();
+        await _cache.InvalidateAdvantagesAsync();
         return true;
     }
 
@@ -77,13 +91,16 @@ public class PortfolioService : IPortfolioService
         return await _db.SkillCategories.FindAsync(id);
     }
 
+    /// <summary>影响 SkillCategories 表 → 失效 Portfolio_SkillCategories</summary>
     public async Task<SkillCategory> CreateSkillCategoryAsync(SkillCategory entity)
     {
         _db.SkillCategories.Add(entity);
         await _db.SaveChangesAsync();
+        await _cache.InvalidateSkillCategoriesAsync();
         return entity;
     }
 
+    /// <summary>影响 SkillCategories 表 → 失效 Portfolio_SkillCategories</summary>
     public async Task<SkillCategory?> UpdateSkillCategoryAsync(int id, SkillCategoryRequest dto)
     {
         var entity = await _db.SkillCategories.FindAsync(id);
@@ -92,15 +109,21 @@ public class PortfolioService : IPortfolioService
         entity.Title = dto.Title;
         entity.ThemeColor = dto.ThemeColor;
         await _db.SaveChangesAsync();
+        await _cache.InvalidateSkillCategoriesAsync();
         return entity;
     }
 
+    /// <summary>
+    /// 影响 SkillCategories 表，其下 Tags 被级联删除 → 失效 Portfolio_SkillCategories。<br/>
+    /// 不连带失效技能诊断：诊断数据存在 SkillDiagnostics 表，与分类无外键关系。
+    /// </summary>
     public async Task<bool> DeleteSkillCategoryAsync(int id)
     {
         var entity = await _db.SkillCategories.FindAsync(id);
         if (entity == null) return false;
         _db.SkillCategories.Remove(entity);
         await _db.SaveChangesAsync();
+        await _cache.InvalidateSkillCategoriesAsync();
         return true;
     }
 
@@ -123,13 +146,19 @@ public class PortfolioService : IPortfolioService
         return await _db.SkillCategories.AnyAsync(s => s.Id == id);
     }
 
+    /// <summary>影响 Tags 表 → 失效 Portfolio_SkillCategories（标签随分类一起被缓存）</summary>
     public async Task<TagInfo> CreateTagAsync(TagInfo entity)
     {
         _db.Tags.Add(entity);
         await _db.SaveChangesAsync();
+        await _cache.InvalidateSkillCategoriesAsync();
         return entity;
     }
 
+    /// <summary>
+    /// 影响 Tags 表 → 失效 Portfolio_SkillCategories。<br/>
+    /// 改名（Name）、改核心标记（IsCore）、跨分类移动（SkillCategoryId）都会改变缓存中的分类聚合。
+    /// </summary>
     public async Task<TagInfo?> UpdateTagAsync(int id, TagInfoRequest dto)
     {
         var entity = await _db.Tags.FindAsync(id);
@@ -139,15 +168,22 @@ public class PortfolioService : IPortfolioService
         entity.IsCore = dto.IsCore;
         entity.SkillCategoryId = dto.SkillCategoryId;
         await _db.SaveChangesAsync();
+        await _cache.InvalidateSkillCategoriesAsync();
         return entity;
     }
 
+    /// <summary>
+    /// 影响 Tags 表 → 失效 Portfolio_SkillCategories。<br/>
+    /// 标签与技能诊断仅靠名称弱关联（SkillDiagnostic.TagName ↔ TagInfo.Name），
+    /// 删除标签不改变 SkillDiagnostics 表的缓存内容，故不连带失效诊断键。
+    /// </summary>
     public async Task<bool> DeleteTagAsync(int id)
     {
         var entity = await _db.Tags.FindAsync(id);
         if (entity == null) return false;
         _db.Tags.Remove(entity);
         await _db.SaveChangesAsync();
+        await _cache.InvalidateSkillCategoriesAsync();
         return true;
     }
 
@@ -162,13 +198,19 @@ public class PortfolioService : IPortfolioService
         return await _db.SkillDiagnostics.FindAsync(id);
     }
 
+    /// <summary>影响 SkillDiagnostics 表 → 失效 Portfolio_SkillDiagnostics</summary>
     public async Task<SkillDiagnostic> CreateSkillDiagnosticAsync(SkillDiagnostic entity)
     {
         _db.SkillDiagnostics.Add(entity);
         await _db.SaveChangesAsync();
+        await _cache.InvalidateSkillDiagnosticsAsync();
         return entity;
     }
 
+    /// <summary>
+    /// 影响 SkillDiagnostics 表 → 失效 Portfolio_SkillDiagnostics。<br/>
+    /// 改 TagName 会改变缓存字典的键，必须整键失效。
+    /// </summary>
     public async Task<SkillDiagnostic?> UpdateSkillDiagnosticAsync(int id, SkillDiagnosticRequest dto)
     {
         var entity = await _db.SkillDiagnostics.FindAsync(id);
@@ -179,15 +221,18 @@ public class PortfolioService : IPortfolioService
         entity.Stat = dto.Stat;
         entity.Status = dto.Status;
         await _db.SaveChangesAsync();
+        await _cache.InvalidateSkillDiagnosticsAsync();
         return entity;
     }
 
+    /// <summary>影响 SkillDiagnostics 表 → 失效 Portfolio_SkillDiagnostics</summary>
     public async Task<bool> DeleteSkillDiagnosticAsync(int id)
     {
         var entity = await _db.SkillDiagnostics.FindAsync(id);
         if (entity == null) return false;
         _db.SkillDiagnostics.Remove(entity);
         await _db.SaveChangesAsync();
+        await _cache.InvalidateSkillDiagnosticsAsync();
         return true;
     }
 
@@ -212,13 +257,16 @@ public class PortfolioService : IPortfolioService
         return await _db.WorkHistories.AnyAsync(w => w.Id == id);
     }
 
+    /// <summary>影响 WorkHistories 表 → 失效 Portfolio_WorkHistories</summary>
     public async Task<WorkHistory> CreateWorkHistoryAsync(WorkHistory entity)
     {
         _db.WorkHistories.Add(entity);
         await _db.SaveChangesAsync();
+        await _cache.InvalidateWorkHistoriesAsync();
         return entity;
     }
 
+    /// <summary>影响 WorkHistories 表 → 失效 Portfolio_WorkHistories</summary>
     public async Task<WorkHistory?> UpdateWorkHistoryAsync(string id, WorkHistoryRequest dto)
     {
         var entity = await _db.WorkHistories.FindAsync(id);
@@ -234,15 +282,20 @@ public class PortfolioService : IPortfolioService
         entity.Desc = dto.Desc;
         entity.IsCurrent = dto.IsCurrent;
         await _db.SaveChangesAsync();
+        await _cache.InvalidateWorkHistoriesAsync();
         return entity;
     }
 
+    /// <summary>
+    /// 影响 WorkHistories 表，其下 Achievements 被级联删除 → 失效 Portfolio_WorkHistories。
+    /// </summary>
     public async Task<bool> DeleteWorkHistoryAsync(string id)
     {
         var entity = await _db.WorkHistories.FindAsync(id);
         if (entity == null) return false;
         _db.WorkHistories.Remove(entity);
         await _db.SaveChangesAsync();
+        await _cache.InvalidateWorkHistoriesAsync();
         return true;
     }
 
@@ -265,13 +318,19 @@ public class PortfolioService : IPortfolioService
         return await _db.WorkHistories.AnyAsync(w => w.Id == workHistoryId);
     }
 
+    /// <summary>影响 Achievements 表 → 失效 Portfolio_WorkHistories（成就随经历一起被缓存）</summary>
     public async Task<Achievement> CreateAchievementAsync(Achievement entity)
     {
         _db.Achievements.Add(entity);
         await _db.SaveChangesAsync();
+        await _cache.InvalidateWorkHistoriesAsync();
         return entity;
     }
 
+    /// <summary>
+    /// 影响 Achievements 表 → 失效 Portfolio_WorkHistories。<br/>
+    /// 改 WorkHistoryId 相当于把成就挪到另一段经历，新旧两段经历的聚合都会变化，整键失效最稳妥。
+    /// </summary>
     public async Task<Achievement?> UpdateAchievementAsync(int id, AchievementRequest dto)
     {
         var entity = await _db.Achievements.FindAsync(id);
@@ -280,15 +339,18 @@ public class PortfolioService : IPortfolioService
         entity.Description = dto.Description;
         entity.WorkHistoryId = dto.WorkHistoryId;
         await _db.SaveChangesAsync();
+        await _cache.InvalidateWorkHistoriesAsync();
         return entity;
     }
 
+    /// <summary>影响 Achievements 表 → 失效 Portfolio_WorkHistories</summary>
     public async Task<bool> DeleteAchievementAsync(int id)
     {
         var entity = await _db.Achievements.FindAsync(id);
         if (entity == null) return false;
         _db.Achievements.Remove(entity);
         await _db.SaveChangesAsync();
+        await _cache.InvalidateWorkHistoriesAsync();
         return true;
     }
 
@@ -312,13 +374,16 @@ public class PortfolioService : IPortfolioService
         return await _db.CompactProjects.AnyAsync(p => p.Id == id);
     }
 
+    /// <summary>影响 CompactProjects 表 → 失效 Portfolio_CompactProjects</summary>
     public async Task<CompactProject> CreateCompactProjectAsync(CompactProject entity)
     {
         _db.CompactProjects.Add(entity);
         await _db.SaveChangesAsync();
+        await _cache.InvalidateProjectsAsync();
         return entity;
     }
 
+    /// <summary>影响 CompactProjects 表 → 失效 Portfolio_CompactProjects</summary>
     public async Task<CompactProject?> UpdateCompactProjectAsync(string id, CompactProjectRequest dto)
     {
         var entity = await _db.CompactProjects.FindAsync(id);
@@ -333,15 +398,20 @@ public class PortfolioService : IPortfolioService
         entity.Year = dto.Year;
         entity.Desc = dto.Desc;
         await _db.SaveChangesAsync();
+        await _cache.InvalidateProjectsAsync();
         return entity;
     }
 
+    /// <summary>
+    /// 影响 CompactProjects 表，其下 ProjectSkills 被级联删除 → 失效 Portfolio_CompactProjects。
+    /// </summary>
     public async Task<bool> DeleteCompactProjectAsync(string id)
     {
         var entity = await _db.CompactProjects.FindAsync(id);
         if (entity == null) return false;
         _db.CompactProjects.Remove(entity);
         await _db.SaveChangesAsync();
+        await _cache.InvalidateProjectsAsync();
         return true;
     }
 
@@ -364,13 +434,19 @@ public class PortfolioService : IPortfolioService
         return await _db.CompactProjects.AnyAsync(p => p.Id == projectId);
     }
 
+    /// <summary>影响 ProjectSkills 表 → 失效 Portfolio_CompactProjects（项目技能随项目一起被缓存）</summary>
     public async Task<ProjectSkill> CreateProjectSkillAsync(ProjectSkill entity)
     {
         _db.ProjectSkills.Add(entity);
         await _db.SaveChangesAsync();
+        await _cache.InvalidateProjectsAsync();
         return entity;
     }
 
+    /// <summary>
+    /// 影响 ProjectSkills 表 → 失效 Portfolio_CompactProjects。<br/>
+    /// 改 ProjectId 相当于把技能挪到另一个项目，新旧两个项目的聚合都会变化，整键失效最稳妥。
+    /// </summary>
     public async Task<ProjectSkill?> UpdateProjectSkillAsync(int id, ProjectSkillRequest dto)
     {
         var entity = await _db.ProjectSkills.FindAsync(id);
@@ -379,15 +455,18 @@ public class PortfolioService : IPortfolioService
         entity.Name = dto.Name;
         entity.ProjectId = dto.ProjectId;
         await _db.SaveChangesAsync();
+        await _cache.InvalidateProjectsAsync();
         return entity;
     }
 
+    /// <summary>影响 ProjectSkills 表 → 失效 Portfolio_CompactProjects</summary>
     public async Task<bool> DeleteProjectSkillAsync(int id)
     {
         var entity = await _db.ProjectSkills.FindAsync(id);
         if (entity == null) return false;
         _db.ProjectSkills.Remove(entity);
         await _db.SaveChangesAsync();
+        await _cache.InvalidateProjectsAsync();
         return true;
     }
 

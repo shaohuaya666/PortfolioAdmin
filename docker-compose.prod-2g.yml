@@ -10,6 +10,12 @@ services:
       JwtSettings__Secret: ${JWT_SECRET}
       JwtSettings__Issuer: ${JWT_ISSUER}
       JwtSettings__Audience: ${JWT_AUDIENCE}
+      # 前台站点（BlazorPortfolio）缓存失效配置，必须与 BlazorPortfolio 的 Cache 节点一致
+      Cache__Enabled: ${CACHE_ENABLED:-true}
+      Cache__KeyPrefix: ${CACHE_KEY_PREFIX:-BlazorPortfolio}
+      Cache__KeyVersion: ${CACHE_KEY_VERSION:-v1}
+      Cache__Redis__ConnectionString: ${REDIS_CONNECTION_STRING:-127.0.0.1:6379}
+      Cache__Redis__Database: ${REDIS_DATABASE:-0}
     # 限制内存使用
     mem_limit: 512m
     mem_reservation: 256m
