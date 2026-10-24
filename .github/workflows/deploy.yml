@@ -39,21 +39,51 @@ jobs:
         run: |
           echo "${{ secrets.ALIYUN_REGISTRY_PASSWORD }}" | docker login --username "${{ secrets.ALIYUN_REGISTRY_USERNAME }}" --password-stdin ${{ secrets.ALIYUN_REGISTRY }}
 
-      # 4. 构建后端镜像
-      - name: Build and push backend image
+      # 4. 构建并推送镜像
+      # GitHub 托管 runner 位于海外，向阿里云国内仓库跨网推送偶发卡死，
+      # 表现为某个层长时间停在 Waiting 且不再推进。这里给单次推送加 600 秒上限并重试 3 次，
+      # 避免一次链路抖动就让整个 job 悬空（默认 6 小时超时，人得干等）。
+      - name: Build and push images
         run: |
-          docker build -t ${{ secrets.ALIYUN_REGISTRY }}/portfolio-admin/portfolio-admin-api:${{ github.sha }} ./backend
-          docker tag ${{ secrets.ALIYUN_REGISTRY }}/portfolio-admin/portfolio-admin-api:${{ github.sha }} ${{ secrets.ALIYUN_REGISTRY }}/portfolio-admin/portfolio-admin-api:latest
-          docker push ${{ secrets.ALIYUN_REGISTRY }}/portfolio-admin/portfolio-admin-api:${{ github.sha }}
-          docker push ${{ secrets.ALIYUN_REGISTRY }}/portfolio-admin/portfolio-admin-api:latest
+          set -e
+          REGISTRY="${{ secrets.ALIYUN_REGISTRY }}"
+          TAG="${{ github.sha }}"
 
-      # 5. 构建前端镜像
-      - name: Build and push frontend image
-        run: |
-          docker build -t ${{ secrets.ALIYUN_REGISTRY }}/portfolio-admin/portfolio-admin-web:${{ github.sha }} ./frontend
-          docker tag ${{ secrets.ALIYUN_REGISTRY }}/portfolio-admin/portfolio-admin-web:${{ github.sha }} ${{ secrets.ALIYUN_REGISTRY }}/portfolio-admin/portfolio-admin-web:latest
-          docker push ${{ secrets.ALIYUN_REGISTRY }}/portfolio-admin/portfolio-admin-web:${{ github.sha }}
-          docker push ${{ secrets.ALIYUN_REGISTRY }}/portfolio-admin/portfolio-admin-web:latest
+          push_with_retry() {
+            local ref="$1" attempt=1
+            while [ "$attempt" -le 3 ]; do
+              echo ">>> 推送 $ref（第 $attempt/3 次，单次上限 600 秒）"
+              if timeout 600 docker push "$ref"; then
+                echo "<<< $ref 推送完成"
+                return 0
+              fi
+              echo "!!! $ref 推送失败或超时，20 秒后重试"
+              attempt=$((attempt + 1))
+              sleep 20
+            done
+            echo "ERROR: $ref 连续 3 次推送失败"
+            echo "       多为 GitHub runner 到国内仓库的跨境链路抖动，可在 Actions 页面直接 Re-run"
+            echo "       若频繁出现，建议改为在服务器本地构建（见 DEPLOYMENT.md）"
+            return 1
+          }
+
+          API="$REGISTRY/portfolio-admin/portfolio-admin-api"
+          WEB="$REGISTRY/portfolio-admin/portfolio-admin-web"
+
+          echo "=== 构建后端镜像 ==="
+          docker build -t "$API:$TAG" ./backend
+          docker tag "$API:$TAG" "$API:latest"
+          push_with_retry "$API:$TAG"
+          push_with_retry "$API:latest"
+
+          echo "=== 构建前端镜像 ==="
+          docker build -t "$WEB:$TAG" ./frontend
+          docker tag "$WEB:$TAG" "$WEB:latest"
+          push_with_retry "$WEB:$TAG"
+          push_with_retry "$WEB:latest"
+
+          echo "=== 镜像体积（用于判断推送耗时是否异常）==="
+          docker images --format '{{.Repository}}:{{.Tag}}  {{.Size}}' | grep portfolio-admin || true
 
       # 6. 部署到服务器
       - name: Deploy to Aliyun Server
@@ -85,24 +115,50 @@ jobs:
               exit 1
             fi
 
-            # --- 1. 加载环境变量（不用 xargs 分词，避免含空格/#/$ 的密钥被破坏） ---
-            set -a
-            . ./.env
-            set +a
+            # --- 1. 加载环境变量 ---
+            # 不能用 `source .env`：连接串里的分号会被 shell 当作命令分隔符。
+            # 例如 DB_CONNECTION_STRING=Server=x;Port=3306;User=root 会被拆成三条命令执行，
+            # 变量只剩 "Server=x"，而 compose 用自己的解析器读同一个文件、注入容器的是完整值。
+            # 两者不一致会让前置校验测了个假值：明明容器是对的，脚本却报缺少账号段。
+            # 这里逐项按行提取，值全程只当作数据处理，不经 shell 解析。
+            read_env() {
+              _key="$1"
+              _line=$(grep -m1 "^[[:space:]]*${_key}=" .env 2>/dev/null || true)
+              if [ -z "$_line" ]; then
+                return 1
+              fi
+              _value=${_line#*=}
+              # 去掉成对的首尾引号（.env 允许用引号包裹含特殊字符的值）
+              case "$_value" in
+                \"*\") _value=${_value#\"}; _value=${_value%\"} ;;
+                \'*\') _value=${_value#\'}; _value=${_value%\'} ;;
+              esac
+              # 去掉行尾可能的 CR（Windows 换行符）
+              printf '%s' "$_value" | tr -d '\r'
+            }
+
+            ALIYUN_REGISTRY=$(read_env ALIYUN_REGISTRY || true)
+            DB_CONNECTION_STRING=$(read_env DB_CONNECTION_STRING || true)
+            JWT_SECRET=$(read_env JWT_SECRET || true)
+            REDIS_CONNECTION_STRING=$(read_env REDIS_CONNECTION_STRING || true)
+            export ALIYUN_REGISTRY DB_CONNECTION_STRING JWT_SECRET REDIS_CONNECTION_STRING
             # 镜像标签直接内联（回滚时用旧 commit sha 手动跑同一段脚本即可）
             export IMAGE_TAG="${{ github.sha }}"
 
             # --- 2. 前置校验：缺项会让容器拿到空连接串/空密钥，必须在动容器之前拦下 ---
-            if [ -z "${ALIYUN_REGISTRY:-}" ]; then echo "ERROR: .env 缺少 ALIYUN_REGISTRY"; exit 1; fi
-            if [ -z "${DB_CONNECTION_STRING:-}" ]; then echo "ERROR: .env 缺少 DB_CONNECTION_STRING"; exit 1; fi
+            if [ -z "$ALIYUN_REGISTRY" ]; then echo "ERROR: .env 缺少 ALIYUN_REGISTRY"; exit 1; fi
+            if [ -z "$DB_CONNECTION_STRING" ]; then echo "ERROR: .env 缺少 DB_CONNECTION_STRING"; exit 1; fi
             # 只判非空不够：残缺的连接串（例如只剩 Server=xxx）后端照样能启动，
             # 首个请求才 500，而流水线会误判为部署成功。这里要求账号与密码段都有实际值。
-            if ! printf '%s' "$DB_CONNECTION_STRING" | grep -qiE '(user|uid)[[:space:]]*=[[:space:]]*[^;]+'; then
-              echo "ERROR: DB_CONNECTION_STRING 缺少有效的账号段（User/Uid）"
+            # 覆盖 User= / User ID= / UserID= / Uid= 四种 MySqlConnector 合法写法
+            if ! printf '%s' "$DB_CONNECTION_STRING" | grep -qiE '(user[[:space:]]*id|uid|user)[[:space:]]*=[[:space:]]*[^;]+'; then
+              echo "ERROR: DB_CONNECTION_STRING 缺少有效的账号段（User / User ID / Uid）"
+              echo "       实际取到：$(printf '%s' "$DB_CONNECTION_STRING" | sed -E 's/(Password|password|Pwd|pwd)=[^;]*/\1=***/g')"
               exit 1
             fi
             if ! printf '%s' "$DB_CONNECTION_STRING" | grep -qiE '(password|pwd)[[:space:]]*=[[:space:]]*[^;]+'; then
               echo "ERROR: DB_CONNECTION_STRING 缺少有效的密码段（Password/Pwd）"
+              echo "       实际取到：$(printf '%s' "$DB_CONNECTION_STRING" | sed -E 's/(Password|password|Pwd|pwd)=[^;]*/\1=***/g')"
               exit 1
             fi
             if [ -z "${JWT_SECRET:-}" ]; then echo "ERROR: .env 缺少 JWT_SECRET"; exit 1; fi
