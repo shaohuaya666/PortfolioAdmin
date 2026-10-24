@@ -58,16 +58,13 @@ jobs:
       # 6. 部署到服务器
       - name: Deploy to Aliyun Server
         uses: appleboy/ssh-action@v1.0.3
-        env:
-          CI_IMAGE_TAG: ${{ github.sha }}
-          REGISTRY: ${{ secrets.ALIYUN_REGISTRY }}
-          REGISTRY_USERNAME: ${{ secrets.ALIYUN_REGISTRY_USERNAME }}
-          REGISTRY_PASSWORD: ${{ secrets.ALIYUN_REGISTRY_PASSWORD }}
         with:
           host: ${{ secrets.ALIYUN_HOST }}
           username: ${{ secrets.ALIYUN_USERNAME }}
           key: ${{ secrets.ALIYUN_SSH_KEY }}
-          envs: CI_IMAGE_TAG,REGISTRY,REGISTRY_USERNAME,REGISTRY_PASSWORD
+          # 密钥直接内联进脚本（与上面构建步骤写法一致），不依赖 envs 传参：
+          # v1.0.3 的 envs 串行化会把值拼坏，实际拿到的地址形如 "https:// xxx"。
+          # GitHub 会在日志中自动掩码这些值，不会明文输出。
           # 脚本走远程默认 shell，下面全部使用 POSIX 语法（不用 pipefail / ${!v} / [[ ]]）
           script: |
             set -eu
@@ -92,7 +89,8 @@ jobs:
             set -a
             . ./.env
             set +a
-            export IMAGE_TAG="${CI_IMAGE_TAG:-latest}"
+            # 镜像标签直接内联（回滚时用旧 commit sha 手动跑同一段脚本即可）
+            export IMAGE_TAG="${{ github.sha }}"
 
             # --- 2. 前置校验：缺项会让容器拿到空连接串/空密钥，必须在动容器之前拦下 ---
             if [ -z "${ALIYUN_REGISTRY:-}" ]; then echo "ERROR: .env 缺少 ALIYUN_REGISTRY"; exit 1; fi
@@ -110,8 +108,34 @@ jobs:
             # --- 3. 前置校验：compose 配置合法性 ---
             docker compose -f docker-compose.prod.yml config -q
 
-            # --- 4. 登录镜像仓库（凭据经 stdin 传入，不出现在命令行与日志中） ---
-            echo "$REGISTRY_PASSWORD" | docker login --username "$REGISTRY_USERNAME" --password-stdin "$REGISTRY"
+            # --- 4. 镜像仓库地址与凭据 ---
+            # tr 去掉首尾空白：Secret 若被存成 " crpi-xxx" 或带换行，
+            # 会拼出 "https:// xxx"，docker 报 "invalid character " " in host name"。
+            REGISTRY="$(printf '%s' '${{ secrets.ALIYUN_REGISTRY }}' | tr -d '[:space:]')"
+            REGISTRY_USERNAME="$(printf '%s' '${{ secrets.ALIYUN_REGISTRY_USERNAME }}' | tr -d '[:space:]')"
+            if [ -z "$REGISTRY" ]; then
+              echo "ERROR: ALIYUN_REGISTRY 为空"
+              exit 1
+            fi
+            # 地址会被 GitHub 掩码成 ***，但长度是明文的：可用于判断 Secret 是否混入了空白
+            echo "仓库地址长度: ${#REGISTRY}"
+
+            # 仓库地址同时存在于 Secret 与服务器 .env 两份，必须一致：
+            # 镜像按 Secret 的地址推送，容器按 .env 的地址拉取，不一致会报 manifest unknown。
+            if [ "$REGISTRY" != "${ALIYUN_REGISTRY:-}" ]; then
+              echo "ERROR: Secret 中的仓库地址与 .env 中的 ALIYUN_REGISTRY 不一致"
+              echo "       Secret: $REGISTRY"
+              echo "       .env  : ${ALIYUN_REGISTRY:-<空>}"
+              exit 1
+            fi
+
+            # 密码经 stdin 传入，不出现在命令行与进程列表中
+            if ! printf '%s' '${{ secrets.ALIYUN_REGISTRY_PASSWORD }}' | docker login --username "$REGISTRY_USERNAME" --password-stdin "$REGISTRY"; then
+              echo "ERROR: 镜像仓库登录失败"
+              echo "       请检查 ALIYUN_REGISTRY / ALIYUN_REGISTRY_USERNAME / ALIYUN_REGISTRY_PASSWORD"
+              echo "       注意 Secret 首尾勿带空格或换行（脚本已清理空白，若仍失败说明值本身有误）"
+              exit 1
+            fi
 
             # --- 5. 只替换有变化的容器 ---
             # 不使用 docker compose down：down 会删除 compose 管理的网络并造成多余中断。
