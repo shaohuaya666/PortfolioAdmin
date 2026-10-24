@@ -16,38 +16,65 @@ jobs:
         uses: actions/checkout@v4
 
       # 2. 验证 Secrets 配置
+      # 用 env 传入而非内联展开：内联时 Secret 里的引号或换行会直接破坏脚本语法。
       - name: Verify Secrets Configuration
+        env:
+          REGISTRY: ${{ secrets.ALIYUN_REGISTRY }}
+          REGISTRY_USERNAME: ${{ secrets.ALIYUN_REGISTRY_USERNAME }}
+          REGISTRY_PASSWORD: ${{ secrets.ALIYUN_REGISTRY_PASSWORD }}
         run: |
-          if [ -z "${{ secrets.ALIYUN_REGISTRY }}" ]; then
-            echo "❌ 错误: ALIYUN_REGISTRY secret 未设置或为空"
-            exit 1
-          fi
-          if [ -z "${{ secrets.ALIYUN_REGISTRY_USERNAME }}" ]; then
-            echo "❌ 错误: ALIYUN_REGISTRY_USERNAME secret 未设置或为空"
-            exit 1
-          fi
-          if [ -z "${{ secrets.ALIYUN_REGISTRY_PASSWORD }}" ]; then
-            echo "❌ 错误: ALIYUN_REGISTRY_PASSWORD secret 未设置或为空"
-            exit 1
-          fi
-          echo "✓ Registry: ${{ secrets.ALIYUN_REGISTRY }}"
-          echo "✓ Username: ${{ secrets.ALIYUN_REGISTRY_USERNAME }}"
-          echo "✓ 所有 secrets 配置正确"
+          set -e
+          # 值会被 GitHub 掩码成 ***，但长度是明文的：
+          # 比预期多几位就说明 Secret 混入了首尾空白（复制粘贴带入的最常见事故）。
+          echo "Registry 长度: ${#REGISTRY}（应等于仓库地址字符数）"
+          echo "Username 长度: ${#REGISTRY_USERNAME}"
+          echo "Password 长度: ${#REGISTRY_PASSWORD}"
+          for pair in "ALIYUN_REGISTRY:$REGISTRY" "ALIYUN_REGISTRY_USERNAME:$REGISTRY_USERNAME" "ALIYUN_REGISTRY_PASSWORD:$REGISTRY_PASSWORD"; do
+            name="${pair%%:*}"
+            value="${pair#*:}"
+            if [ -z "$(printf '%s' "$value" | tr -d '[:space:]')" ]; then
+              echo "❌ 错误: $name secret 未设置或为空"
+              exit 1
+            fi
+          done
+          echo "✓ 所有 secrets 已设置"
 
       # 3. 登录阿里云容器镜像服务
       - name: Login to Aliyun Container Registry
+        env:
+          REGISTRY: ${{ secrets.ALIYUN_REGISTRY }}
+          REGISTRY_USERNAME: ${{ secrets.ALIYUN_REGISTRY_USERNAME }}
+          REGISTRY_PASSWORD: ${{ secrets.ALIYUN_REGISTRY_PASSWORD }}
         run: |
-          echo "${{ secrets.ALIYUN_REGISTRY_PASSWORD }}" | docker login --username "${{ secrets.ALIYUN_REGISTRY_USERNAME }}" --password-stdin ${{ secrets.ALIYUN_REGISTRY }}
+          set -e
+          # Secret 常因复制粘贴混入首尾空白。裸展开时空白被 shell 当分词符吞掉而不报错，
+          # 一旦拼进带引号的镜像标签就会变成：
+          #   invalid tag " crpi-xxx/portfolio-admin-api:sha": invalid reference format
+          # 这里统一清理（密码除外：首尾空格是密码的合法字符，清理会导致登录失败）。
+          REGISTRY_CLEAN="$(printf '%s' "$REGISTRY" | tr -d '[:space:]')"
+          USERNAME_CLEAN="$(printf '%s' "$REGISTRY_USERNAME" | tr -d '[:space:]')"
+          if [ "$REGISTRY_CLEAN" != "$REGISTRY" ]; then
+            echo "⚠ ALIYUN_REGISTRY 含首尾空白，已在本步清理；建议顺手修正 Secret 本身"
+          fi
+          printf '%s' "$REGISTRY_PASSWORD" | docker login --username "$USERNAME_CLEAN" --password-stdin "$REGISTRY_CLEAN"
 
       # 4. 构建并推送镜像
       # GitHub 托管 runner 位于海外，向阿里云国内仓库跨网推送偶发卡死，
       # 表现为某个层长时间停在 Waiting 且不再推进。这里给单次推送加 600 秒上限并重试 3 次，
       # 避免一次链路抖动就让整个 job 悬空（默认 6 小时超时，人得干等）。
       - name: Build and push images
+        env:
+          REGISTRY: ${{ secrets.ALIYUN_REGISTRY }}
         run: |
           set -e
-          REGISTRY="${{ secrets.ALIYUN_REGISTRY }}"
+          # 必须清理首尾空白，否则拼出的标签带前导空格：
+          #   invalid tag " crpi-xxx/portfolio-admin-api:sha": invalid reference format
+          REGISTRY="$(printf '%s' "$REGISTRY" | tr -d '[:space:]')"
           TAG="${{ github.sha }}"
+          if [ -z "$REGISTRY" ]; then
+            echo "ERROR: ALIYUN_REGISTRY 为空"
+            exit 1
+          fi
 
           push_with_retry() {
             local ref="$1" attempt=1
