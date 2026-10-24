@@ -73,6 +73,35 @@ public sealed class BlazorPortfolioCacheInvalidator : IBlazorPortfolioCacheInval
     public Task InvalidateAllAsync(CancellationToken cancellationToken = default)
         => RemoveAsync(_allKeys, cancellationToken);
 
+    /// <inheritdoc />
+    public async Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
+    {
+        if (!_options.Enabled)
+        {
+            return false;
+        }
+
+        try
+        {
+            var db = GetDatabase();
+            if (db is null)
+            {
+                return false;
+            }
+
+            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeoutCts.CancelAfter(TimeSpan.FromMilliseconds(_options.OperationTimeoutMs));
+
+            await db.PingAsync().WaitAsync(timeoutCts.Token).ConfigureAwait(false);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "[前台缓存失效] Redis 健康检查未通过。");
+            return false;
+        }
+    }
+
     /// <summary>
     /// 删除指定缓存键。Redis 不可用时静默返回，异常情况记录警告后返回。
     /// </summary>

@@ -131,7 +131,7 @@ async function handleSave() {
   saving.value = true
   try {
     if (isEdit.value) {
-      await workHistoriesApi.update(form.id, { id: form.id, company: form.company, role: form.role, period: form.period, desc: form.desc, isCurrent: form.isCurrent })
+      await workHistoriesApi.update(form.id, { company: form.company, role: form.role, period: form.period, desc: form.desc, isCurrent: form.isCurrent })
       ElMessage.success('更新成功')
     } else {
       await workHistoriesApi.create(form)
