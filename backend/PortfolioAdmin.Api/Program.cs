@@ -2,6 +2,7 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using PortfolioAdmin.Api.Caching;
 using PortfolioAdmin.Api.Data;
 using PortfolioAdmin.Api.Middleware;
 using PortfolioAdmin.Api.Services;
@@ -54,7 +55,22 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 // JWT 认证
-var jwtSecretKey = builder.Configuration["Jwt:SecretKey"]!;
+// 密钥必须来自环境变量 Jwt__SecretKey，严禁写进 appsettings.json（会随镜像进 Git）。
+// 缺失时快速失败，避免以空密钥/弱密钥启动后在登录阶段才暴露问题。
+var jwtSecretKey = builder.Configuration["Jwt:SecretKey"];
+if (string.IsNullOrWhiteSpace(jwtSecretKey) || Encoding.UTF8.GetByteCount(jwtSecretKey) < 32)
+{
+    if (!builder.Environment.IsDevelopment())
+    {
+        // 生产环境必须显式提供，避免以空密钥/弱密钥启动后在登录阶段才暴露问题
+        throw new InvalidOperationException(
+            "Jwt:SecretKey 未配置或长度不足 32 字节，请通过环境变量 Jwt__SecretKey 配置。");
+    }
+
+    // 仅本地开发使用占位密钥，不影响任何线上环境
+    jwtSecretKey = "PortfolioAdmin-Development-Only-Key-0123456789";
+}
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -64,8 +80,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = "PortfolioAdmin",
-            ValidAudience = "PortfolioAdmin",
+            ValidIssuer = builder.Configuration["Jwt:Issuer"] ?? "PortfolioAdmin",
+            ValidAudience = builder.Configuration["Jwt:Audience"] ?? "PortfolioAdmin",
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey))
         };
     });
@@ -74,6 +90,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<PortfolioDbContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
+
+// 前台站点（BlazorPortfolio）缓存失效：与管理端共用同一份 Cache 配置结构
+builder.Services.Configure<BlazorPortfolioCacheOptions>(
+    builder.Configuration.GetSection(BlazorPortfolioCacheOptions.SectionName));
+builder.Services.AddSingleton<IBlazorPortfolioCacheInvalidator, BlazorPortfolioCacheInvalidator>();
 
 // 注册业务服务
 builder.Services.AddScoped<IPortfolioService, PortfolioService>();

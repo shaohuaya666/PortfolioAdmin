@@ -1,21 +1,29 @@
 services:
   backend:
-    image: ${ALIYUN_REGISTRY}/portfolio-admin/portfolio-admin-api:latest
+    image: ${ALIYUN_REGISTRY}/portfolio-admin/portfolio-admin-api:${IMAGE_TAG:-latest}
     container_name: portfolio-backend
     restart: always
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_URLS: http://+:80
-      # 生产环境的连接字符串从环境变量读取
       ConnectionStrings__DefaultConnection: ${DB_CONNECTION_STRING}
-      JwtSettings__Secret: ${JWT_SECRET}
-      JwtSettings__Issuer: ${JWT_ISSUER}
-      JwtSettings__Audience: ${JWT_AUDIENCE}
+      # 变量名必须与 Program.cs 读取的配置路径对应：Jwt:SecretKey / Jwt:Issuer / Jwt:Audience
+      Jwt__SecretKey: ${JWT_SECRET}
+      Jwt__Issuer: ${JWT_ISSUER}
+      Jwt__Audience: ${JWT_AUDIENCE}
+      # 前台站点（BlazorPortfolio）缓存失效配置，必须与 BlazorPortfolio 的 Cache 节点一致
+      Cache__Enabled: ${CACHE_ENABLED:-true}
+      Cache__KeyPrefix: ${CACHE_KEY_PREFIX:-BlazorPortfolio}
+      Cache__KeyVersion: ${CACHE_KEY_VERSION:-v1}
+      # 主机名 redis 依赖外部网络 cache-net 解析；Redis 开了 requirepass 时必须带 password=
+      Cache__Redis__ConnectionString: ${REDIS_CONNECTION_STRING:-redis:6379}
+      Cache__Redis__Database: ${REDIS_DATABASE:-0}
     networks:
       - portfolio-net
+      - cache-net
 
   frontend:
-    image: ${ALIYUN_REGISTRY}/portfolio-admin/portfolio-admin-web:latest
+    image: ${ALIYUN_REGISTRY}/portfolio-admin/portfolio-admin-web:${IMAGE_TAG:-latest}
     container_name: portfolio-frontend
     restart: always
     depends_on:
@@ -23,9 +31,9 @@ services:
     networks:
       - portfolio-net
 
-  # Nginx 反向代理
+  # Nginx 反代：对外 5001(HTTP)/5443(HTTPS)，内部 80
   nginx:
-    image: swr.cn-north-4.myhuaweicloud.com/ddn-k8s/docker.io/nginx:alpine
+    image: nginx:1.27-alpine
     container_name: portfolio-nginx
     restart: always
     ports:
@@ -33,7 +41,7 @@ services:
       - "5443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro  # SSL 证书目录
+      - ./nginx/ssl:/etc/nginx/ssl:ro
       - ./nginx/logs:/var/log/nginx
     depends_on:
       - frontend
@@ -44,3 +52,10 @@ services:
 networks:
   portfolio-net:
     driver: bridge
+
+  # 与 Redis 容器共享的网络。
+  # 必须声明为 external：若由本 compose 创建，docker compose down 会删除该网络，
+  # 外部容器 redis 的挂接会被一并断开，且 up -d 重建网络后不会自动恢复。
+  cache-net:
+    external: true
+    name: cache-net
