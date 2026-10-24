@@ -96,7 +96,7 @@ async function handleSave() {
   saving.value = true
   try {
     if (isEdit.value) {
-      await advantagesApi.update(form.id, { num: form.num, title: form.title, desc: form.desc })
+      await advantagesApi.update(form.id, { id: form.id, num: form.num, title: form.title, desc: form.desc })
       ElMessage.success('更新成功')
     } else {
       await advantagesApi.create(form)
