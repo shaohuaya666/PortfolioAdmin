@@ -29,4 +29,10 @@ public interface IBlazorPortfolioCacheInvalidator
 
     /// <summary>失效前台全部业务缓存键，用于批量导入等无法逐条判断的场景</summary>
     Task InvalidateAllAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Redis 当前是否可用，仅供健康检查使用，不读写任何数据。<br/>
+    /// 缓存失效是尽力而为的，因此它只作为部署期的提示信息，不应作为可用性判定依据。
+    /// </summary>
+    Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default);
 }

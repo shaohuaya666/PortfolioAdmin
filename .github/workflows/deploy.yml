@@ -95,6 +95,16 @@ jobs:
             # --- 2. 前置校验：缺项会让容器拿到空连接串/空密钥，必须在动容器之前拦下 ---
             if [ -z "${ALIYUN_REGISTRY:-}" ]; then echo "ERROR: .env 缺少 ALIYUN_REGISTRY"; exit 1; fi
             if [ -z "${DB_CONNECTION_STRING:-}" ]; then echo "ERROR: .env 缺少 DB_CONNECTION_STRING"; exit 1; fi
+            # 只判非空不够：残缺的连接串（例如只剩 Server=xxx）后端照样能启动，
+            # 首个请求才 500，而流水线会误判为部署成功。这里要求账号与密码段都有实际值。
+            if ! printf '%s' "$DB_CONNECTION_STRING" | grep -qiE '(user|uid)[[:space:]]*=[[:space:]]*[^;]+'; then
+              echo "ERROR: DB_CONNECTION_STRING 缺少有效的账号段（User/Uid）"
+              exit 1
+            fi
+            if ! printf '%s' "$DB_CONNECTION_STRING" | grep -qiE '(password|pwd)[[:space:]]*=[[:space:]]*[^;]+'; then
+              echo "ERROR: DB_CONNECTION_STRING 缺少有效的密码段（Password/Pwd）"
+              exit 1
+            fi
             if [ -z "${JWT_SECRET:-}" ]; then echo "ERROR: .env 缺少 JWT_SECRET"; exit 1; fi
             if [ -z "${REDIS_CONNECTION_STRING:-}" ]; then echo "ERROR: .env 缺少 REDIS_CONNECTION_STRING"; exit 1; fi
 
@@ -178,6 +188,31 @@ jobs:
               fi
             else
               echo "WARN: 服务器未安装 curl，跳过 HTTP 冒烟检查"
+            fi
+
+            # --- 7.2 健康检查：数据库连通性（部署成败的真正判据） ---
+            # EF Core 是懒连接，DB 连不上时后端照样启动，上面两项检查都会通过，
+            # 只有真实请求进来才 500。这里主动打 /api/health 让问题在部署阶段暴露。
+            if command -v curl >/dev/null 2>&1; then
+              health=000
+              i=1
+              while [ "$i" -le 5 ]; do
+                health=$(curl -s -o /dev/null -w '%{http_code}' --max-time 15 http://127.0.0.1:5001/api/health || echo 000)
+                if [ "$health" = "200" ]; then break; fi
+                echo "健康检查未通过（第 $i 次，HTTP $health），3 秒后重试"
+                sleep 3
+                i=$((i + 1))
+              done
+
+              echo "后端健康检查 /api/health: HTTP $health"
+              if [ "$health" != "200" ]; then
+                echo "ERROR: 后端健康检查未通过，数据库不可用"
+                echo "       接口返回：$(curl -s --max-time 10 http://127.0.0.1:5001/api/health || true)"
+                echo "       请检查 .env 的 DB_CONNECTION_STRING，以及 MySQL 是否允许容器来源 IP 连接"
+                exit 1
+              fi
+            else
+              echo "WARN: 服务器未安装 curl，跳过后端健康检查"
             fi
 
             # --- 7.1 核对容器内实际生效的配置（密码/密钥掩码后输出） ---
