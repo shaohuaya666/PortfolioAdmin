@@ -1,0 +1,49 @@
+<svg width="800" height="450" xmlns="http://www.w3.org/2000/svg">
+  <!-- 个人作品集主题：玻璃拟态 + 卡片布局 -->
+  <defs>
+    <linearGradient id="bg2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e1b4b;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#312e81;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="glass" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.1" />
+      <stop offset="100%" style="stop-color:#ffffff;stop-opacity:0.05" />
+    </linearGradient>
+    <filter id="blur">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2" />
+    </filter>
+  </defs>
+
+  <!-- 背景 -->
+  <rect width="800" height="450" fill="url(#bg2)"/>
+
+  <!-- 装饰圆圈 -->
+  <circle cx="150" cy="100" r="60" fill="#8b5cf6" opacity="0.15" filter="url(#blur)"/>
+  <circle cx="650" cy="350" r="80" fill="#06b6d4" opacity="0.15" filter="url(#blur)"/>
+
+  <!-- 玻璃拟态卡片 -->
+  <g transform="translate(180, 100)">
+    <rect x="0" y="0" width="140" height="100" rx="12" fill="url(#glass)" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+    <circle cx="70" cy="40" r="15" fill="#8b5cf6" opacity="0.6"/>
+    <rect x="30" y="65" width="80" height="4" rx="2" fill="#c4b5fd" opacity="0.5"/>
+    <rect x="20" y="80" width="100" height="4" rx="2" fill="#c4b5fd" opacity="0.3"/>
+  </g>
+
+  <g transform="translate(360, 100)">
+    <rect x="0" y="0" width="140" height="100" rx="12" fill="url(#glass)" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+    <circle cx="70" cy="40" r="15" fill="#06b6d4" opacity="0.6"/>
+    <rect x="30" y="65" width="80" height="4" rx="2" fill="#22d3ee" opacity="0.5"/>
+    <rect x="20" y="80" width="100" height="4" rx="2" fill="#22d3ee" opacity="0.3"/>
+  </g>
+
+  <g transform="translate(270, 220)">
+    <rect x="0" y="0" width="140" height="100" rx="12" fill="url(#glass)" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+    <circle cx="70" cy="40" r="15" fill="#ec4899" opacity="0.6"/>
+    <rect x="30" y="65" width="80" height="4" rx="2" fill="#f9a8d4" opacity="0.5"/>
+    <rect x="20" y="80" width="100" height="4" rx="2" fill="#f9a8d4" opacity="0.3"/>
+  </g>
+
+  <!-- 标题 -->
+  <text x="400" y="380" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="#c4b5fd" text-anchor="middle">Blazor 作品集</text>
+  <text x="400" y="410" font-family="Arial, sans-serif" font-size="16" fill="#94a3b8" text-anchor="middle">Blazor WebAssembly + Glass Design</text>
+</svg>

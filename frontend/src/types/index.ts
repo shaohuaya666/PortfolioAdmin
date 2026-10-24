@@ -50,6 +50,23 @@ export interface ProjectSkill {
   projectId: string
 }
 
+export interface ProjectDeliverable {
+  id: string
+  name: string
+  version: string
+  description: string
+  status: string
+  url: string
+  coverImage: string
+  techTags: string
+  completedAt: string
+  owner: string
+  remark: string
+  sortOrder: number
+  isPublic: boolean
+  projectId: string | null
+}
+
 export interface SkillDiagnostic {
   id: number
   tagName: string

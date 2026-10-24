@@ -66,4 +66,13 @@ public interface IPortfolioService
     Task<ProjectSkill> CreateProjectSkillAsync(ProjectSkill entity);
     Task<ProjectSkill?> UpdateProjectSkillAsync(int id, ProjectSkillRequest dto);
     Task<bool> DeleteProjectSkillAsync(int id);
+
+    // ============ ProjectDeliverables ============
+    Task<List<ProjectDeliverable>> GetProjectDeliverablesAsync(string? projectId = null, string? status = null);
+    Task<ProjectDeliverable?> GetProjectDeliverableByIdAsync(string id);
+    Task<bool> ProjectDeliverableExistsAsync(string id);
+    Task<bool> CompactProjectExistsForDeliverableAsync(string projectId);
+    Task<ProjectDeliverable> CreateProjectDeliverableAsync(ProjectDeliverable entity);
+    Task<ProjectDeliverable?> UpdateProjectDeliverableAsync(string id, ProjectDeliverableRequest dto);
+    Task<bool> DeleteProjectDeliverableAsync(string id);
 }

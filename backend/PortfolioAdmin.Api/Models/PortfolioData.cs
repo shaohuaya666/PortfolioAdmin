@@ -87,6 +87,7 @@ public class CompactProject
     [MaxLength(500)]
     public string Desc { get; set; } = string.Empty;
     public List<ProjectSkill> Skills { get; set; } = new();
+    public List<ProjectDeliverable> Deliverables { get; set; } = new();
 }
 
 [Table("ProjectSkills")]
@@ -116,4 +117,38 @@ public class SkillDiagnostic
     public string Stat { get; set; } = string.Empty;
     [MaxLength(50)]
     public string Status { get; set; } = string.Empty;
+}
+
+[Table("ProjectDeliverables")]
+public class ProjectDeliverable
+{
+    [Key]
+    public string Id { get; set; } = string.Empty;
+    [MaxLength(200)]
+    public string Name { get; set; } = string.Empty;
+    [MaxLength(50)]
+    public string Version { get; set; } = string.Empty;
+    [MaxLength(1000)]
+    public string Description { get; set; } = string.Empty;
+    [MaxLength(50)]
+    public string Status { get; set; } = "draft";
+    [MaxLength(500)]
+    public string Url { get; set; } = string.Empty;
+    [MaxLength(500)]
+    public string CoverImage { get; set; } = string.Empty;
+    [MaxLength(500)]
+    public string TechTags { get; set; } = string.Empty;
+    [MaxLength(50)]
+    public string CompletedAt { get; set; } = string.Empty;
+    [MaxLength(100)]
+    public string Owner { get; set; } = string.Empty;
+    [MaxLength(500)]
+    public string Remark { get; set; } = string.Empty;
+    public int SortOrder { get; set; }
+    public bool IsPublic { get; set; } = true;
+    [MaxLength(50)]
+    public string? ProjectId { get; set; }
+
+    [ForeignKey(nameof(ProjectId))]
+    public CompactProject? Project { get; set; }
 }
