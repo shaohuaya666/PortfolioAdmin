@@ -67,8 +67,10 @@ if (string.IsNullOrWhiteSpace(jwtSecretKey) || Encoding.UTF8.GetByteCount(jwtSec
             "Jwt:SecretKey 未配置或长度不足 32 字节，请通过环境变量 Jwt__SecretKey 配置。");
     }
 
-    // 仅本地开发使用占位密钥，不影响任何线上环境
+    // 仅本地开发使用占位密钥，不影响任何线上环境。
+    // 必须写回配置：JwtHelper 签发时独立读取 Jwt:SecretKey，不写回会导致开发环境下登录抛空引用。
     jwtSecretKey = "PortfolioAdmin-Development-Only-Key-0123456789";
+    builder.Configuration["Jwt:SecretKey"] = jwtSecretKey;
 }
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -80,8 +82,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"] ?? "PortfolioAdmin",
-            ValidAudience = builder.Configuration["Jwt:Audience"] ?? "PortfolioAdmin",
+            // 与 JwtHelper 签发端共用同一解析逻辑，杜绝"签发与校验不一致"导致的全站 401
+            ValidIssuer = JwtHelper.ResolveIssuer(builder.Configuration),
+            ValidAudience = JwtHelper.ResolveAudience(builder.Configuration),
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey))
         };
     });

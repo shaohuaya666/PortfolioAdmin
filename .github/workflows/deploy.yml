@@ -159,6 +159,16 @@ jobs:
             sleep 5
             docker compose -f docker-compose.prod.yml ps
 
+            # 后端容器必须处于 running。
+            # 前端是 nginx 静态托管，后端崩溃时 "/" 依然返回 200，
+            # 只查前端会漏掉"后端启动即崩溃（如 JWT 配置校验失败）"这种最严重的情况。
+            echo "后端最近日志："
+            docker logs portfolio-backend --tail 30 2>&1 || true
+            if [ "$(docker inspect -f '{{.State.Running}}' portfolio-backend 2>/dev/null)" != "true" ]; then
+              echo "ERROR: portfolio-backend 未在运行，请查看上方日志"
+              exit 1
+            fi
+
             if command -v curl >/dev/null 2>&1; then
               code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 http://127.0.0.1:5001/)
               echo "前端健康检查: HTTP $code"
