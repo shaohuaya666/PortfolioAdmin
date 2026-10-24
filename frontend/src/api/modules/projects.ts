@@ -5,7 +5,7 @@ export const projectsApi = {
   getAll() { return request.get<CompactProject[]>('/CompactProjects') },
   getById(id: string) { return request.get<CompactProject>(`/CompactProjects/${id}`) },
   create(data: { id: string; title: string; type: string; year: string; desc: string }) { return request.post('/CompactProjects', data) },
-  update(id: string, data: { title: string; type: string; year: string; desc: string }) { return request.put(`/CompactProjects/${id}`, data) },
+  update(id: string, data: { id: string; title: string; type: string; year: string; desc: string }) { return request.put(`/CompactProjects/${id}`, data) },
   delete(id: string) { return request.delete(`/CompactProjects/${id}`) }
 }
 

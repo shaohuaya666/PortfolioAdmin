@@ -191,5 +191,7 @@ jobs:
             # --- 8. 清理旧镜像（保留 7 天内，避免 :sha 镜像无限堆积） ---
             docker image prune -a -f --filter "until=168h"
 
-            docker logout "$REGISTRY"
+            # 不要在这里 docker logout：登出后服务器上任何手动的
+            # docker pull / docker compose up -d 都会因未登录而失败，
+            # 而 CI 每次运行都会重新登录，登出不带来额外安全收益。
             echo "部署完成"
