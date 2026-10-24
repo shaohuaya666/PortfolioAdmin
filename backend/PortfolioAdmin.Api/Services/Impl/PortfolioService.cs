@@ -53,10 +53,13 @@ public class PortfolioService : IPortfolioService
         var entity = await _db.Advantages.FindAsync(id);
         if (entity == null) return null;
 
-        if (dto.Id != id && await _db.Advantages.AnyAsync(a => a.Id == dto.Id))
+        // 主键以路由参数为准：请求体里的 Id 留空即保持原主键。
+        // 管理端编辑弹窗禁用了编号输入框，正常流程下 targetId 恒等于 id。
+        var targetId = string.IsNullOrWhiteSpace(dto.Id) ? id : dto.Id;
+        if (targetId != id && await _db.Advantages.AnyAsync(a => a.Id == targetId))
             return null;
 
-        entity.Id = dto.Id;
+        entity.Id = targetId;
         entity.Num = dto.Num;
         entity.Title = dto.Title;
         entity.Desc = dto.Desc;
@@ -272,10 +275,12 @@ public class PortfolioService : IPortfolioService
         var entity = await _db.WorkHistories.FindAsync(id);
         if (entity == null) return null;
 
-        if (dto.Id != id && await _db.WorkHistories.AnyAsync(w => w.Id == dto.Id))
+        // 主键以路由参数为准：请求体里的 Id 留空即保持原主键（理由同 UpdateAdvantageAsync）
+        var targetId = string.IsNullOrWhiteSpace(dto.Id) ? id : dto.Id;
+        if (targetId != id && await _db.WorkHistories.AnyAsync(w => w.Id == targetId))
             return null;
 
-        entity.Id = dto.Id;
+        entity.Id = targetId;
         entity.Company = dto.Company;
         entity.Role = dto.Role;
         entity.Period = dto.Period;
@@ -389,10 +394,12 @@ public class PortfolioService : IPortfolioService
         var entity = await _db.CompactProjects.FindAsync(id);
         if (entity == null) return null;
 
-        if (dto.Id != id && await _db.CompactProjects.AnyAsync(p => p.Id == dto.Id))
+        // 主键以路由参数为准：请求体里的 Id 留空即保持原主键（理由同 UpdateAdvantageAsync）
+        var targetId = string.IsNullOrWhiteSpace(dto.Id) ? id : dto.Id;
+        if (targetId != id && await _db.CompactProjects.AnyAsync(p => p.Id == targetId))
             return null;
 
-        entity.Id = dto.Id;
+        entity.Id = targetId;
         entity.Title = dto.Title;
         entity.Type = dto.Type;
         entity.Year = dto.Year;

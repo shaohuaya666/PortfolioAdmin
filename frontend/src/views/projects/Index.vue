@@ -127,7 +127,7 @@ async function handleSave() {
   saving.value = true
   try {
     if (isEdit.value) {
-      await projectsApi.update(form.id, { id: form.id, title: form.title, type: form.type, year: form.year, desc: form.desc })
+      await projectsApi.update(form.id, { title: form.title, type: form.type, year: form.year, desc: form.desc })
     } else {
       await projectsApi.create({ id: form.id, title: form.title, type: form.type, year: form.year, desc: form.desc })
     }

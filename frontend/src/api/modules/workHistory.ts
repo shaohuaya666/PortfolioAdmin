@@ -4,7 +4,7 @@ import type { WorkHistory, Achievement } from '@/types'
 export const workHistoriesApi = {
   getAll() { return request.get<WorkHistory[]>('/WorkHistories') },
   create(data: { id: string; company: string; role: string; period: string; desc: string; isCurrent: boolean }) { return request.post('/WorkHistories', data) },
-  update(id: string, data: { id: string; company: string; role: string; period: string; desc: string; isCurrent: boolean }) { return request.put(`/WorkHistories/${id}`, data) },
+  update(id: string, data: { company: string; role: string; period: string; desc: string; isCurrent: boolean }) { return request.put(`/WorkHistories/${id}`, data) },
   delete(id: string) { return request.delete(`/WorkHistories/${id}`) }
 }
 

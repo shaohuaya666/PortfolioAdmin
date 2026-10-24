@@ -31,6 +31,10 @@ public class CompactProjectsController : ControllerBase
     [RequirePermission("projects:create")]
     public async Task<ActionResult<CompactProject>> Create(CompactProjectRequest dto)
     {
+        // Id 在更新路径是可选的，因此新增必须在这里显式校验，避免创建出空主键记录
+        if (string.IsNullOrWhiteSpace(dto.Id))
+            return BadRequest(new { message = "编号不能为空" });
+
         if (await _service.CompactProjectExistsAsync(dto.Id))
             return Conflict(new { message = "ID 已存在" });
 

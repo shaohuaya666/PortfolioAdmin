@@ -5,7 +5,12 @@ namespace PortfolioAdmin.Api.DTOs;
 // ========== Advantage ==========
 public class AdvantageRequest
 {
-    [Required, MaxLength(50)]
+    /// <summary>
+    /// 仅新增时使用；更新时留空，主键以路由参数为准。<br/>
+    /// 管理端编辑弹窗禁用了编号输入框，更新路径不会改主键，
+    /// 因此这里不能标 [Required]，否则 PUT 会因缺少 body 中的 id 直接 400。
+    /// </summary>
+    [MaxLength(50)]
     public string Id { get; set; } = string.Empty;
     [Required, MaxLength(10)]
     public string Num { get; set; } = string.Empty;
@@ -36,7 +41,8 @@ public class TagInfoRequest
 // ========== WorkHistory ==========
 public class WorkHistoryRequest
 {
-    [Required, MaxLength(50)]
+    /// <summary>仅新增时使用；更新时留空，主键以路由参数为准（原因同 AdvantageRequest.Id）</summary>
+    [MaxLength(50)]
     public string Id { get; set; } = string.Empty;
     [Required, MaxLength(200)]
     public string Company { get; set; } = string.Empty;
@@ -61,7 +67,8 @@ public class AchievementRequest
 // ========== CompactProject ==========
 public class CompactProjectRequest
 {
-    [Required, MaxLength(50)]
+    /// <summary>仅新增时使用；更新时留空，主键以路由参数为准（原因同 AdvantageRequest.Id）</summary>
+    [MaxLength(50)]
     public string Id { get; set; } = string.Empty;
     [Required, MaxLength(200)]
     public string Title { get; set; } = string.Empty;
