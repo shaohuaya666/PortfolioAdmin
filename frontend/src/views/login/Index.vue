@@ -10,6 +10,15 @@
         <p>作品集管理后台</p>
       </div>
 
+      <!-- 演示账号提示 -->
+      <div class="demo-tip">
+        <span class="material-symbols-outlined demo-tip-icon">info</span>
+        <div class="demo-tip-text">
+          <strong>演示账号</strong>
+          <span>用户名：audience　密码：123456，可直接登录体验系统</span>
+        </div>
+      </div>
+
       <el-form ref="formRef" :model="form" :rules="rules" @submit.prevent="handleLogin">
         <el-form-item prop="username">
           <el-input
@@ -77,8 +86,8 @@ const showCaptcha = ref(false)
 let pendingCaptchaId = ''
 
 const form = reactive({
-  username: '',
-  password: ''
+  username: 'audience',
+  password: '123456'
 })
 
 const rules: FormRules = {
@@ -177,6 +186,35 @@ async function doLogin() {
   font-size: 13px;
   color: #64748b;
   margin-top: 6px;
+}
+
+/* 演示账号提示 */
+.demo-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  margin-bottom: 24px;
+  background: rgba(6, 182, 212, 0.08);
+  border: 1px solid rgba(6, 182, 212, 0.25);
+  border-radius: 10px;
+}
+.demo-tip-icon {
+  font-size: 20px;
+  color: #06b6d4;
+  flex-shrink: 0;
+}
+.demo-tip-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #94a3b8;
+}
+.demo-tip-text strong {
+  color: #06b6d4;
+  font-size: 13px;
 }
 
 .login-btn {
