@@ -39,5 +39,12 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('permissions')
   }
 
-  return { token, username, roleName, menus, permissions, setAuth, hasPermission, logout }
+  // 清除所有 localStorage（用于彻底清理）
+  function clearAll() {
+    logout()
+    // 清除可能存在的其他缓存数据
+    localStorage.clear()
+  }
+
+  return { token, username, roleName, menus, permissions, setAuth, hasPermission, logout, clearAll }
 })
