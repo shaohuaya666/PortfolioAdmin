@@ -79,13 +79,28 @@ const router = createRouter({
   ]
 })
 
-router.beforeEach((to, _from, next) => {
+router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
-  if (to.path !== '/login' && !token) {
-    next('/login')
-  } else {
+
+  // 如果要去登录页，直接放行
+  if (to.path === '/login') {
     next()
+    return
   }
+
+  // 如果没有 token，跳转到登录页
+  if (!token) {
+    // 避免从登录页再次跳转到登录页
+    if (from.path === '/login') {
+      next(false)
+    } else {
+      next('/login')
+    }
+    return
+  }
+
+  // 有 token，正常放行
+  next()
 })
 
 export default router
